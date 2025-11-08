@@ -263,6 +263,9 @@ const port = process.env.PORT || 3000;
 
 console.log(`Server running on http://localhost:${port}`);
 
+// Export the Hono app for mounting
+export { app as sharedApp };
+
 export default {
   port,
   fetch: app.fetch,

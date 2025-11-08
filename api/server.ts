@@ -10,8 +10,11 @@ import { captureKnowledge, updateKnowledge, syncRecentChanges } from '@knowledge
 import { queryKnowledge, findRelatedEntities, getRecentKnowledge } from '@knowledge/retrieval';
 import { generateKnowledgeGraph, suggestConnections } from '@knowledge/graph';
 import type { KnowledgeEntry, QueryRequest } from '@shared/types';
+import { createMCPServer } from './shared/mcp-server';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 
 const app = new Hono();
+const mcpServer = createMCPServer();
 
 // Middleware
 app.use('*', logger());
@@ -24,6 +27,66 @@ app.get('/health', (c) => {
     timestamp: new Date().toISOString(),
     service: 'liquid-metal-hackathon',
   });
+});
+
+// MCP Server endpoint
+app.post('/mcp', async (c) => {
+  const body = await c.req.json();
+
+  // Create a new transport for each request
+  const transport = new StreamableHTTPServerTransport({
+    enableJsonResponse: true,
+  });
+
+  // Handle the request
+  const response = await new Promise<any>((resolve, reject) => {
+    // Create mock request/response objects
+    const mockReq = {
+      body,
+      headers: Object.fromEntries(c.req.raw.headers),
+      method: 'POST',
+      url: c.req.url,
+    };
+
+    const mockRes = {
+      chunks: [] as any[],
+      statusCode: 200,
+      headers: new Map(),
+
+      writeHead(status: number, headers?: any) {
+        this.statusCode = status;
+        if (headers) {
+          Object.entries(headers).forEach(([k, v]) => {
+            this.headers.set(k, v);
+          });
+        }
+        return this; // Chain for writeHead().end()
+      },
+
+      write(chunk: any) {
+        this.chunks.push(chunk);
+      },
+
+      end(chunk?: any) {
+        if (chunk) this.chunks.push(chunk);
+        const body = this.chunks.join('');
+        resolve({
+          status: this.statusCode,
+          headers: Object.fromEntries(this.headers),
+          body: body ? JSON.parse(body) : {},
+        });
+      },
+
+      on() {},
+    };
+
+    // Connect and handle request
+    mcpServer.connect(transport as any).then(() => {
+      (transport as any).handleRequest(mockReq, mockRes, body);
+    }).catch(reject);
+  });
+
+  return c.json(response.body, response.status);
 });
 
 // Knowledge endpoints
@@ -150,16 +213,9 @@ knowledge.post('/sync', async (c) => {
 // Mount knowledge routes
 app.route('/api/knowledge', knowledge);
 
-// Tooling endpoints (placeholder for partner's work)
-const tooling = new Hono();
-
-tooling.get('/', (c) => {
-  return c.json({
-    message: 'Tooling endpoints - to be implemented by partner',
-  });
-});
-
-app.route('/api/tooling', tooling);
+// Mount tooling routes
+import toolingApp from './tooling/index';
+app.route('/api/tools', toolingApp);
 
 // 404 handler
 app.notFound((c) => {

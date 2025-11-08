@@ -29,10 +29,10 @@ const mcpBuilder = new MCPBuilder(config, process.env.ANTHROPIC_API_KEY);
 const mcpRunner = new MCPRunner(config);
 
 /**
- * POST /api/tools/create
+ * POST /create
  * Create a new MCP tool from natural language request
  */
-app.post('/api/tools/create', userContext, async (c) => {
+app.post('/create', userContext, async (c) => {
   try {
     const user = c.get('user');
     const body = await c.req.json();
@@ -73,7 +73,7 @@ app.post('/api/tools/create', userContext, async (c) => {
  * GET /api/tools
  * List all tools for user
  */
-app.get('/api/tools', userContext, async (c) => {
+app.get('/', userContext, async (c) => {
   try {
     const user = c.get('user');
     const tools = await mcpRunner.listTools(user.userId);
@@ -89,7 +89,7 @@ app.get('/api/tools', userContext, async (c) => {
  * GET /api/tools/:toolId
  * Get specific tool details
  */
-app.get('/api/tools/:toolId', userContext, async (c) => {
+app.get('/:toolId', userContext, async (c) => {
   try {
     const user = c.get('user');
     const toolId = c.req.param('toolId');
@@ -111,7 +111,7 @@ app.get('/api/tools/:toolId', userContext, async (c) => {
  * POST /api/tools/:toolId/execute
  * Execute a tool
  */
-app.post('/api/tools/:toolId/execute', userContext, async (c) => {
+app.post('/:toolId/execute', userContext, async (c) => {
   try {
     const user = c.get('user');
     const toolId = c.req.param('toolId');
@@ -139,7 +139,7 @@ app.post('/api/tools/:toolId/execute', userContext, async (c) => {
  * DELETE /api/tools/:toolId
  * Delete a tool
  */
-app.delete('/api/tools/:toolId', userContext, async (c) => {
+app.delete('/:toolId', userContext, async (c) => {
   try {
     const user = c.get('user');
     const toolId = c.req.param('toolId');
@@ -158,10 +158,10 @@ app.delete('/api/tools/:toolId', userContext, async (c) => {
 });
 
 /**
- * GET /api/tools/oauth/callback
+ * GET /oauth/callback
  * OAuth callback handler
  */
-app.get('/api/tools/oauth/callback', async (c) => {
+app.get('/oauth/callback', async (c) => {
   try {
     const code = c.req.query('code');
     const stateParam = c.req.query('state');
@@ -232,18 +232,5 @@ app.get('/api/tools/oauth/callback', async (c) => {
   }
 });
 
-/**
- * Health check
- */
-app.get('/health', (c) => {
-  return c.json({ status: 'ok', service: 'api-tooling', timestamp: new Date().toISOString() });
-});
-
-const port = process.env.TOOLING_PORT || 3001;
-
-console.log(`API Tooling Layer running on http://localhost:${port}`);
-
-export default {
-  port,
-  fetch: app.fetch,
-};
+// Export the Hono app instance for mounting in main server
+export default app;
