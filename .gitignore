@@ -1,6 +1,10 @@
 # Dependencies
 node_modules/
+**/node_modules/
 bun.lockb
+
+# Bun
+.bun/
 
 # Environment
 .env
