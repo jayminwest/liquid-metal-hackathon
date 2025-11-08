@@ -1,23 +1,33 @@
 /**
  * MCP Server implementation for api/shared
- * Exposes local storage MCP tools via HTTP transport
+ *
+ * HTTP Transport Proxy for Raindrop MCP
+ *
+ * This server acts as a thin HTTP transport wrapper over Raindrop MCP tools.
+ * It receives MCP tool calls via HTTP transport and delegates them to the
+ * underlying Raindrop MCP server, enabling true persistence and semantic search.
+ *
+ * Architecture:
+ * - HTTP Client → HTTP Transport (this server) → Raindrop MCP → Persistent Storage
+ * - All data operations are persisted via Raindrop infrastructure
+ * - No in-memory storage; data survives server restarts
+ * - SmartBucket searches use real vector embeddings (semantic, not keyword)
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
+import { RaindropClient } from './raindrop.js';
 
-// Simple in-memory storage (replace with database/file storage later)
-const storage = {
-  buckets: new Map<string, Map<string, string>>(), // bucket_name -> key -> content
-  annotations: new Map<string, any>(), // annotation_id -> annotation
-  sessions: new Map<string, any[]>(), // session_id -> memories[]
-  smartBuckets: new Set<string>(), // Set of created bucket names
-};
+// Initialize Raindrop client for MCP tool delegation
+// Note: RaindropClient uses MCP tools via Claude Code runtime (globalThis.mcp__raindrop_mcp__*)
+// The config parameter is required but not used for actual MCP tool calls
+const raindropClient = new RaindropClient({
+  endpoint: 'mcp-tools', // Not used - MCP tools called directly
+  auth: { type: 'bearer', token: '' }, // Not used - MCP tools called directly
+});
 
 /**
  * Create and configure the MCP server
@@ -204,19 +214,20 @@ export function createMCPServer() {
         case 'put-object': {
           const { bucket_name, key, content, content_type } = args as any;
 
-          if (!storage.buckets.has(bucket_name)) {
-            storage.buckets.set(bucket_name, new Map());
-          }
-
-          storage.buckets.get(bucket_name)!.set(key, content);
+          const result = await raindropClient.putObject({
+            bucket_name,
+            key,
+            content,
+            content_type,
+          });
 
           return {
             content: [
               {
                 type: 'text',
                 text: JSON.stringify({
-                  success: true,
-                  key,
+                  success: result.success,
+                  key: result.key,
                   message: `Object stored in ${bucket_name}/${key}`,
                 }),
               },
@@ -227,10 +238,10 @@ export function createMCPServer() {
         case 'get-object': {
           const { bucket_name, key } = args as any;
 
-          const bucket = storage.buckets.get(bucket_name);
-          if (!bucket || !bucket.has(key)) {
-            throw new Error(`Object not found: ${bucket_name}/${key}`);
-          }
+          const result = await raindropClient.getObject({
+            bucket_name,
+            key,
+          });
 
           return {
             content: [
@@ -238,8 +249,9 @@ export function createMCPServer() {
                 type: 'text',
                 text: JSON.stringify({
                   success: true,
-                  content: bucket.get(key),
+                  content: result.content,
                   key,
+                  content_type: result.content_type,
                 }),
               },
             ],
@@ -249,17 +261,17 @@ export function createMCPServer() {
         case 'delete-object': {
           const { bucket_name, key } = args as any;
 
-          const bucket = storage.buckets.get(bucket_name);
-          if (bucket) {
-            bucket.delete(key);
-          }
+          const result = await raindropClient.deleteObject({
+            bucket_name,
+            key,
+          });
 
           return {
             content: [
               {
                 type: 'text',
                 text: JSON.stringify({
-                  success: true,
+                  success: result.success,
                   message: `Object deleted: ${bucket_name}/${key}`,
                 }),
               },
@@ -270,32 +282,18 @@ export function createMCPServer() {
         case 'list-objects': {
           const { bucket_name, prefix, limit } = args as any;
 
-          const bucket = storage.buckets.get(bucket_name);
-          if (!bucket) {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify({ objects: [] }),
-                },
-              ],
-            };
-          }
-
-          let keys = Array.from(bucket.keys());
-          if (prefix) {
-            keys = keys.filter(k => k.startsWith(prefix));
-          }
-          if (limit) {
-            keys = keys.slice(0, limit);
-          }
+          const result = await raindropClient.listObjects({
+            bucket_name,
+            prefix,
+            limit,
+          });
 
           return {
             content: [
               {
                 type: 'text',
                 text: JSON.stringify({
-                  objects: keys.map(key => ({ key })),
+                  objects: result.objects,
                 }),
               },
             ],
@@ -305,18 +303,19 @@ export function createMCPServer() {
         case 'create-smartbucket': {
           const { bucket_name, description, embedding_model } = args as any;
 
-          storage.smartBuckets.add(bucket_name);
-          if (!storage.buckets.has(bucket_name)) {
-            storage.buckets.set(bucket_name, new Map());
-          }
+          const result = await raindropClient.createSmartBucket({
+            bucket_name,
+            description,
+            embedding_model,
+          });
 
           return {
             content: [
               {
                 type: 'text',
                 text: JSON.stringify({
-                  success: true,
-                  bucket_name,
+                  success: result.success,
+                  bucket_name: result.bucket_name,
                   message: `SmartBucket created: ${bucket_name}`,
                 }),
               },
@@ -327,38 +326,19 @@ export function createMCPServer() {
         case 'document-search': {
           const { bucket_name, query, limit = 10, threshold = 0.7 } = args as any;
 
-          // Simple keyword search (replace with vector search later)
-          const bucket = storage.buckets.get(bucket_name);
-          if (!bucket) {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify({ results: [] }),
-                },
-              ],
-            };
-          }
-
-          const results: any[] = [];
-          const lowerQuery = query.toLowerCase();
-
-          for (const [key, content] of bucket.entries()) {
-            if (content.toLowerCase().includes(lowerQuery)) {
-              results.push({
-                key,
-                content,
-                score: 0.9, // Mock score
-              });
-            }
-          }
+          const result = await raindropClient.documentSearch({
+            bucket_name,
+            query,
+            limit,
+            threshold,
+          });
 
           return {
             content: [
               {
                 type: 'text',
                 text: JSON.stringify({
-                  results: results.slice(0, limit),
+                  results: result.results,
                 }),
               },
             ],
@@ -368,12 +348,11 @@ export function createMCPServer() {
         case 'put-annotation': {
           const { annotation_id, content, metadata, tags } = args as any;
 
-          storage.annotations.set(annotation_id, {
+          const result = await raindropClient.putAnnotation({
             annotation_id,
             content,
             metadata,
             tags,
-            created_at: new Date().toISOString(),
           });
 
           return {
@@ -381,8 +360,8 @@ export function createMCPServer() {
               {
                 type: 'text',
                 text: JSON.stringify({
-                  success: true,
-                  annotation_id,
+                  success: result.success,
+                  annotation_id: result.annotation_id,
                 }),
               },
             ],
@@ -392,16 +371,20 @@ export function createMCPServer() {
         case 'get-annotation': {
           const { annotation_id } = args as any;
 
-          const annotation = storage.annotations.get(annotation_id);
-          if (!annotation) {
-            throw new Error(`Annotation not found: ${annotation_id}`);
-          }
+          const result = await raindropClient.getAnnotation({
+            annotation_id,
+          });
 
           return {
             content: [
               {
                 type: 'text',
-                text: JSON.stringify(annotation),
+                text: JSON.stringify({
+                  annotation_id,
+                  content: result.content,
+                  metadata: result.metadata,
+                  tags: result.tags,
+                }),
               },
             ],
           };
@@ -410,20 +393,18 @@ export function createMCPServer() {
         case 'list-annotations': {
           const { tags, limit = 50, offset = 0 } = args as any;
 
-          let annotations = Array.from(storage.annotations.values());
-
-          if (tags && tags.length > 0) {
-            annotations = annotations.filter(a =>
-              tags.some((tag: string) => a.tags?.includes(tag))
-            );
-          }
+          const result = await raindropClient.listAnnotations({
+            tags,
+            limit,
+            offset,
+          });
 
           return {
             content: [
               {
                 type: 'text',
                 text: JSON.stringify({
-                  annotations: annotations.slice(offset, offset + limit),
+                  annotations: result.annotations,
                 }),
               },
             ],
@@ -431,8 +412,7 @@ export function createMCPServer() {
         }
 
         case 'start-session': {
-          const session_id = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          storage.sessions.set(session_id, []);
+          const result = await raindropClient.startSession();
 
           return {
             content: [
@@ -440,7 +420,7 @@ export function createMCPServer() {
                 type: 'text',
                 text: JSON.stringify({
                   success: true,
-                  session_id,
+                  session_id: result.session_id,
                   created_at: new Date().toISOString(),
                 }),
               },
@@ -451,28 +431,21 @@ export function createMCPServer() {
         case 'put-memory': {
           const { session_id, content, key, timeline, agent } = args as any;
 
-          if (!storage.sessions.has(session_id)) {
-            storage.sessions.set(session_id, []);
-          }
-
-          const memory = {
-            memory_id: `mem_${Date.now()}`,
+          const result = await raindropClient.putMemory({
+            session_id,
             content,
             key,
             timeline,
             agent,
-            created_at: new Date().toISOString(),
-          };
-
-          storage.sessions.get(session_id)!.push(memory);
+          });
 
           return {
             content: [
               {
                 type: 'text',
                 text: JSON.stringify({
-                  success: true,
-                  memory_id: memory.memory_id,
+                  success: result.success,
+                  memory_id: result.memory_id,
                   session_id,
                 }),
               },
@@ -483,25 +456,20 @@ export function createMCPServer() {
         case 'get-memory': {
           const { session_id, key, timeline, n_most_recent } = args as any;
 
-          let memories = storage.sessions.get(session_id) || [];
-
-          if (key) {
-            memories = memories.filter(m => m.key === key);
-          }
-          if (timeline) {
-            memories = memories.filter(m => m.timeline === timeline);
-          }
-          if (n_most_recent) {
-            memories = memories.slice(-n_most_recent);
-          }
+          const result = await raindropClient.getMemory({
+            session_id,
+            key,
+            timeline,
+            n_most_recent,
+          });
 
           return {
             content: [
               {
                 type: 'text',
                 text: JSON.stringify({
-                  memories,
-                  count: memories.length,
+                  memories: result.memories,
+                  count: result.memories.length,
                 }),
               },
             ],

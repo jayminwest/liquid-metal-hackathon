@@ -4,7 +4,7 @@
     "api-shared-local": {
       "type": "http",
       "url": "http://localhost:3000/mcp",
-      "description": "Local api/shared MCP server with in-memory storage"
+      "description": "HTTP transport proxy for Raindrop MCP - provides persistent storage via Raindrop infrastructure with semantic search"
     },
     "basic-memory": {
       "command": "npx",
