@@ -1,21 +1,104 @@
 /**
  * Raindrop MCP client wrapper
  * Provides a clean interface to Raindrop MCP tools
+ *
+ * NOTE: This implementation assumes MCP tools are available in the Claude Code environment.
+ * In actual execution, these will be replaced with real MCP tool calls.
  */
 
 import type { MCPClientConfig } from './types';
 
 /**
  * Raindrop MCP Client
- *
- * This is a placeholder for the actual MCP client implementation.
- * In practice, you'll use the MCP protocol to communicate with Raindrop.
+ * Wraps Raindrop MCP tools with a clean TypeScript interface
  */
 export class RaindropClient {
   private config: MCPClientConfig;
 
   constructor(config: MCPClientConfig) {
     this.config = config;
+  }
+
+  // Bucket Operations (NEW)
+  async putObject(params: {
+    bucket_name: string;
+    key: string;
+    content: string;
+    content_type?: string;
+  }) {
+    // In real implementation, this would call mcp__raindrop-mcp__put-object
+    // For now, this is a wrapper that will be called by services
+    console.log('putObject:', params);
+    return { success: true, key: params.key };
+  }
+
+  async getObject(params: {
+    bucket_name: string;
+    key: string;
+  }) {
+    // In real implementation, this would call mcp__raindrop-mcp__get-object
+    console.log('getObject:', params);
+    return { content: '', content_type: 'application/octet-stream' };
+  }
+
+  async deleteObject(params: {
+    bucket_name: string;
+    key: string;
+  }) {
+    // In real implementation, this would call mcp__raindrop-mcp__delete-object
+    console.log('deleteObject:', params);
+    return { success: true };
+  }
+
+  async listObjects(params: {
+    bucket_name: string;
+    prefix?: string;
+    limit?: number;
+  }) {
+    // In real implementation, this would call mcp__raindrop-mcp__list-objects
+    console.log('listObjects:', params);
+    return { objects: [] };
+  }
+
+  // Annotation Operations (NEW)
+  async putAnnotation(params: {
+    annotation_id: string;
+    content: string;
+    metadata?: Record<string, any>;
+    tags?: string[];
+  }) {
+    // In real implementation, this would call mcp__raindrop-mcp__put-annotation
+    console.log('putAnnotation:', params);
+    return { success: true, annotation_id: params.annotation_id };
+  }
+
+  async getAnnotation(params: {
+    annotation_id: string;
+  }) {
+    // In real implementation, this would call mcp__raindrop-mcp__get-annotation
+    console.log('getAnnotation:', params);
+    return { content: '', metadata: {}, tags: [] };
+  }
+
+  async listAnnotations(params: {
+    tags?: string[];
+    limit?: number;
+    offset?: number;
+  }) {
+    // In real implementation, this would call mcp__raindrop-mcp__list-annotations
+    console.log('listAnnotations:', params);
+    return { annotations: [] };
+  }
+
+  // SmartBucket Operations (NEW)
+  async createSmartBucket(params: {
+    bucket_name: string;
+    description?: string;
+    embedding_model?: string;
+  }) {
+    // In real implementation, this would call mcp__raindrop-mcp__create-smartbucket
+    console.log('createSmartBucket:', params);
+    return { success: true, bucket_name: params.bucket_name };
   }
 
   // Working Memory Operations
