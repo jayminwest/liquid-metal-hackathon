@@ -99,7 +99,7 @@ export class OrchestrationClient {
   /**
    * Complete the workflow
    */
-  async completeWorkflow(workflowCtx: WorkflowContext, result: WorkflowResult): Promise<void> {
+  async completeWorkflow(workflowCtx: WorkflowContext, _result: WorkflowResult): Promise<void> {
     try {
       await this.orchestrationService.completeWorkflow(workflowCtx.sessionId, true);
       console.log(`[OrchestrationClient] Workflow ${workflowCtx.sessionId} completed successfully`);

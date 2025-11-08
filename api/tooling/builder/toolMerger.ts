@@ -198,7 +198,7 @@ function generateToolDefinitionString(toolDef: MCPToolDefinition): string {
   const required = Object.entries(toolDef.inputSchema.properties)
     .filter(([_, prop]) => prop.required)
     .map(([key]) => `'${key}'`)
-    .join(', ');
+    .join(', ') || '';
 
   return `      {
         name: '${toolDef.name}',
@@ -231,7 +231,8 @@ function incrementVersion(version: string): string {
   if (parts.length !== 3) return '1.0.1';
 
   const [major, minor, patch] = parts;
-  return `${major}.${minor}.${parseInt(patch, 10) + 1}`;
+  const patchNum = parseInt(patch || '0', 10);
+  return `${major}.${minor}.${patchNum + 1}`;
 }
 
 /**

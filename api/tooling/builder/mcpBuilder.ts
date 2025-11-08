@@ -3,7 +3,7 @@
  * Coordinates agent-based MCP tool building workflow
  */
 
-import { ToolBuilderAgent, type ToolAnalysis, type GeneratedTool } from '../agent/toolBuilderAgent';
+import { ToolBuilderAgent } from '../agent/toolBuilderAgent';
 import { OrchestrationClient, type WorkflowContext } from '../agent/orchestrationClient';
 import { mergeToolIntoServer, type ExistingMCPServer, type NewTool } from './toolMerger';
 import { generateMCPServer, type MCPServerConfig } from '../templates/base.template';
@@ -21,7 +21,7 @@ export interface ToolBuildResult {
   success: boolean;
   toolId?: string;
   toolName?: string;
-  status?: 'pending_oauth' | 'active';
+  status?: 'auth_required' | 'active';
   oauthUrl?: string;
   error?: string;
   metadata?: {
@@ -147,14 +147,13 @@ export class MCPBuilder {
       });
 
       // Step 6: Register tool in registry
-      const toolStatus = generatedTool.oauthConfig ? 'pending_oauth' : 'active';
+      const toolStatus = generatedTool.oauthConfig ? 'auth_required' : 'active';
 
       await this.mcpRegistry.registerTool(request.userId, {
         id: generatedTool.toolId,
         name: analysis.toolName,
         template: analysis.service,
         status: toolStatus,
-        description: analysis.description,
         oauthComplete: !generatedTool.oauthConfig,
       });
 

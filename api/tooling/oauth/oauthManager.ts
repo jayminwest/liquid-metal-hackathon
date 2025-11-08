@@ -3,7 +3,7 @@
  * Generic OAuth flow handling
  */
 
-import { getProvider, type OAuthProvider } from './providers';
+import { getProvider } from './providers';
 import { exchangeSlackCode } from './slackOAuth';
 
 export interface OAuthState {
@@ -86,7 +86,7 @@ export async function exchangeCode(
 /**
  * GitHub OAuth code exchange (placeholder)
  */
-async function exchangeGitHubCode(code: string): Promise<any> {
+async function exchangeGitHubCode(_code: string): Promise<any> {
   // HACKATHON: Not implemented yet
   throw new Error('GitHub OAuth not yet implemented');
 }
@@ -94,7 +94,7 @@ async function exchangeGitHubCode(code: string): Promise<any> {
 /**
  * Google OAuth code exchange (placeholder)
  */
-async function exchangeGoogleCode(code: string): Promise<any> {
+async function exchangeGoogleCode(_code: string): Promise<any> {
   // HACKATHON: Not implemented yet
   throw new Error('Google OAuth not yet implemented');
 }

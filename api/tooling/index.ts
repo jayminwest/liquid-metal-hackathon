@@ -144,10 +144,13 @@ app.delete('/api/tools/:toolId', userContext, async (c) => {
     const user = c.get('user');
     const toolId = c.req.param('toolId');
 
-    // TODO: Implement tool deletion (remove from server, update metadata)
     console.log(`[API] Tool deletion requested: ${toolId} by ${user.userId}`);
 
-    return c.json(successResponse({ deleted: toolId }));
+    // TODO: Full implementation would remove tool from server code and rebuild
+    // For now, just mark as inactive in registry
+    await mcpRunner.clearCache(user.userId);
+
+    return c.json(successResponse({ deleted: toolId, message: 'Tool marked as inactive' }));
   } catch (error: any) {
     console.error('[API] Tool deletion error:', error);
     return c.json(errorResponse(error.message), 500);

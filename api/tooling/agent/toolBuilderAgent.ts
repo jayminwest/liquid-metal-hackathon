@@ -8,7 +8,6 @@ import {
   TOOL_BUILDER_SYSTEM_PROMPT,
   TOOL_ANALYSIS_PROMPT,
   CODE_GENERATION_PROMPT,
-  OAUTH_CONFIG_PROMPT,
 } from './agentPrompts';
 
 export interface ToolAnalysis {
@@ -78,10 +77,11 @@ export class ToolBuilderAgent {
       });
 
       // Extract JSON from response
-      const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+      const firstContent = message.content[0];
+      const responseText = firstContent && firstContent.type === 'text' ? firstContent.text : '';
       const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
 
-      if (!jsonMatch) {
+      if (!jsonMatch || !jsonMatch[1]) {
         throw new Error('Failed to extract JSON from analysis response');
       }
 
@@ -114,10 +114,11 @@ export class ToolBuilderAgent {
       });
 
       // Extract JSON from response
-      const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+      const firstContent = message.content[0];
+      const responseText = firstContent && firstContent.type === 'text' ? firstContent.text : '';
       const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
 
-      if (!jsonMatch) {
+      if (!jsonMatch || !jsonMatch[1]) {
         throw new Error('Failed to extract JSON from code generation response');
       }
 
@@ -248,7 +249,7 @@ export class ToolBuilderAgent {
     return this.analyzeSlackRequest('read slack channels');
   }
 
-  private analyzeGitHubRequest(request: string): ToolAnalysis {
+  private analyzeGitHubRequest(_request: string): ToolAnalysis {
     return {
       service: 'github',
       toolName: 'create-issue',
@@ -269,25 +270,26 @@ export class ToolBuilderAgent {
     };
   }
 
-  private analyzeEmailRequest(request: string): ToolAnalysis {
-    return {
-      service: 'email',
-      toolName: 'send-email',
-      description: 'Send an email via Gmail',
-      parameters: {
-        to: { type: 'string', description: 'Recipient email', required: true },
-        subject: { type: 'string', description: 'Email subject', required: true },
-        body: { type: 'string', description: 'Email body', required: true },
-      },
-      authentication: {
-        method: 'oauth2',
-        provider: 'google',
-        scopes: ['https://www.googleapis.com/auth/gmail.send'],
-        authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
-        tokenUrl: 'https://oauth2.googleapis.com/token',
-      },
-    };
-  }
+  // Future expansion: Add Email-specific request analysis
+  // private analyzeEmailRequest(_request: string): ToolAnalysis {
+  //   return {
+  //     service: 'email',
+  //     toolName: 'send-email',
+  //     description: 'Send an email via Gmail',
+  //     parameters: {
+  //       to: { type: 'string', description: 'Recipient email', required: true },
+  //       subject: { type: 'string', description: 'Email subject', required: true },
+  //       body: { type: 'string', description: 'Email body', required: true },
+  //     },
+  //     authentication: {
+  //       method: 'oauth2',
+  //       provider: 'google',
+  //       scopes: ['https://www.googleapis.com/auth/gmail.send'],
+  //       authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+  //       tokenUrl: 'https://oauth2.googleapis.com/token',
+  //     },
+  //   };
+  // }
 
   // Template generators (returning minimal working code)
   private generateSlackTool(toolId: string, analysis: ToolAnalysis): GeneratedTool {
@@ -350,13 +352,15 @@ async function handleReadMessages(args: any, credentials: any) {
     };
   }
 
-  private generateGitHubTool(toolId: string, analysis: ToolAnalysis): GeneratedTool {
-    return this.generateGenericTool(toolId, analysis);
-  }
+  // Future expansion: Add GitHub-specific tool generation
+  // private generateGitHubTool(toolId: string, analysis: ToolAnalysis): GeneratedTool {
+  //   return this.generateGenericTool(toolId, analysis);
+  // }
 
-  private generateEmailTool(toolId: string, analysis: ToolAnalysis): GeneratedTool {
-    return this.generateGenericTool(toolId, analysis);
-  }
+  // Future expansion: Add Email-specific tool generation
+  // private generateEmailTool(toolId: string, analysis: ToolAnalysis): GeneratedTool {
+  //   return this.generateGenericTool(toolId, analysis);
+  // }
 
   private generateGenericTool(toolId: string, analysis: ToolAnalysis): GeneratedTool {
     const handlerName = this.toHandlerName(analysis.toolName);
@@ -421,7 +425,8 @@ async function ${handlerName}(args: any, credentials: any) {
   }
 
   private wrapInMCPServer(serverName: string, version: string, tools: any[]): string {
-    const handlers = tools.map((t) => t.handler).join(', ');
+    // Note: handlers list not currently used but kept for future reference
+    // const handlers = tools.map((t) => t.handler).join(', ');
     const toolDefs = tools
       .map(
         (t) => `      {
