@@ -145,14 +145,19 @@ export async function saveConversation(conversation: Conversation): Promise<void
       },
     });
 
-    // 2. Sync to Raindrop working memory
-    const raindrop = getRaindropClient();
-    for (const msg of conversation.messages) {
-      await raindrop.putMemory({
-        session_id: conversation.sessionId,
-        content: `${msg.role}: ${msg.content}`,
-        key: `msg_${msg.timestamp}`,
-      });
+    // 2. Sync to Raindrop working memory (optional - may not be available)
+    try {
+      const raindrop = getRaindropClient();
+      for (const msg of conversation.messages) {
+        await raindrop.putMemory({
+          session_id: conversation.sessionId,
+          content: `${msg.role}: ${msg.content}`,
+          key: `msg_${msg.timestamp}`,
+        });
+      }
+    } catch (raindropError) {
+      // Raindrop not available - that's okay, conversation still saved to basic-memory
+      console.log('Raindrop sync skipped (not available)');
     }
   } catch (error) {
     console.error('Error saving conversation:', error);

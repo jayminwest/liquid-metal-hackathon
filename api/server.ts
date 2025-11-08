@@ -25,6 +25,10 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat/completio
 const app = new Hono();
 
 // Middleware
+app.use('*', async (c, next) => {
+  console.log(`[APP] Incoming request: ${c.req.method} ${c.req.url}`);
+  await next();
+});
 app.use('*', logger());
 app.use('*', cors());
 
@@ -38,8 +42,18 @@ app.get('/health', (c) => {
 });
 
 // Knowledge endpoints
+console.log('[SERVER STARTUP] Creating knowledge router...');
 const knowledge = new Hono();
 
+console.log('[SERVER STARTUP] Adding knowledge middleware...');
+// Middleware to log all knowledge requests
+knowledge.use('*', async (c, next) => {
+  console.log(`[knowledge middleware] ${c.req.method} ${c.req.url}`);
+  await next();
+  console.log(`[knowledge middleware] Response sent`);
+});
+
+console.log('[SERVER STARTUP] Adding capture endpoint...');
 // Capture new knowledge
 knowledge.post('/capture', async (c) => {
   try {
@@ -257,7 +271,9 @@ knowledge.post('/upload', async (c) => {
 });
 
 // Mount knowledge routes
+console.log('[SERVER STARTUP] Mounting knowledge routes at /api/knowledge...');
 app.route('/api/knowledge', knowledge);
+console.log('[SERVER STARTUP] Knowledge routes mounted successfully');
 
 // Conversation endpoints
 const conversations = new Hono();
@@ -351,6 +367,35 @@ app.route('/api/conversations', conversations);
 app.get('/api/test', (c) => {
   console.log('[TEST] Test endpoint hit!');
   return c.json({ message: 'Backend is working!', timestamp: new Date().toISOString() });
+});
+
+// Test streaming endpoint
+app.post('/api/test/stream', async (c) => {
+  console.log('[TEST STREAM] Request received');
+
+  c.header('Content-Type', 'text/event-stream');
+  c.header('Cache-Control', 'no-cache');
+  c.header('Connection', 'keep-alive');
+
+  return stream(c, async (stream) => {
+    console.log('[TEST STREAM] Starting stream');
+
+    await stream.write(`data: ${JSON.stringify({type: 'status', message: 'Step 1'})}\n\n`);
+    console.log('[TEST STREAM] Sent step 1');
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    await stream.write(`data: ${JSON.stringify({type: 'status', message: 'Step 2'})}\n\n`);
+    console.log('[TEST STREAM] Sent step 2');
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    await stream.write(`data: ${JSON.stringify({type: 'response', message: 'Test response!'})}\n\n`);
+    console.log('[TEST STREAM] Sent response');
+
+    await stream.write(`data: ${JSON.stringify({type: 'done', message: ''})}\n\n`);
+    console.log('[TEST STREAM] Stream complete');
+  });
 });
 
 // Streaming chat endpoint (Server-Sent Events)
