@@ -38,11 +38,17 @@ export class RaindropClient {
     description?: string;
     embedding_model?: string;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__create-smartbucket
-    // Expected return: { success: boolean, bucket_name: string }
-    console.log('[MCP] create-smartbucket:', params.bucket_name);
-    return { success: true, bucket_name: params.bucket_name };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__create_smartbucket({
+        bucket_name: params.bucket_name,
+        description: params.description,
+        embedding_model: params.embedding_model,
+      });
+      return { success: true, bucket_name: params.bucket_name };
+    } catch (error: any) {
+      console.error('[MCP] create-smartbucket error:', error);
+      throw new Error(`Failed to create SmartBucket: ${error.message}`);
+    }
   }
 
   /**
@@ -54,33 +60,53 @@ export class RaindropClient {
     content: string;
     content_type?: string;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__put-object
-    // Expected return: { success: boolean, key: string }
-    console.log('[MCP] put-object:', params.key);
-    return { success: true, key: params.key };
+    try {
+      await (globalThis as any).mcp__raindrop_mcp__put_object({
+        bucket_name: params.bucket_name,
+        key: params.key,
+        content: params.content,
+        content_type: params.content_type,
+      });
+      return { success: true, key: params.key };
+    } catch (error: any) {
+      console.error('[MCP] put-object error:', error);
+      throw new Error(`Failed to put object: ${error.message}`);
+    }
   }
 
   async getObject(params: {
     bucket_name: string;
     key: string;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__get-object
-    // Expected return: { content: string, content_type: string }
-    console.log('[MCP] get-object:', params.key);
-    return { content: '', content_type: 'application/octet-stream' };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__get_object({
+        bucket_name: params.bucket_name,
+        key: params.key,
+      });
+      return {
+        content: result.content || '',
+        content_type: result.content_type || 'application/octet-stream'
+      };
+    } catch (error: any) {
+      console.error('[MCP] get-object error:', error);
+      throw new Error(`Failed to get object: ${error.message}`);
+    }
   }
 
   async deleteObject(params: {
     bucket_name: string;
     key: string;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__delete-object
-    // Expected return: { success: boolean }
-    console.log('[MCP] delete-object:', params.key);
-    return { success: true };
+    try {
+      await (globalThis as any).mcp__raindrop_mcp__delete_object({
+        bucket_name: params.bucket_name,
+        key: params.key,
+      });
+      return { success: true };
+    } catch (error: any) {
+      console.error('[MCP] delete-object error:', error);
+      throw new Error(`Failed to delete object: ${error.message}`);
+    }
   }
 
   async listObjects(params: {
@@ -88,11 +114,17 @@ export class RaindropClient {
     prefix?: string;
     limit?: number;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__list-objects
-    // Expected return: { objects: Array<{ key: string, size: number, last_modified: string }> }
-    console.log('[MCP] list-objects');
-    return { objects: [] };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__list_objects({
+        bucket_name: params.bucket_name,
+        prefix: params.prefix,
+        limit: params.limit,
+      });
+      return { objects: result.objects || [] };
+    } catch (error: any) {
+      console.error('[MCP] list-objects error:', error);
+      throw new Error(`Failed to list objects: ${error.message}`);
+    }
   }
 
   /**
@@ -104,11 +136,18 @@ export class RaindropClient {
     limit?: number;
     threshold?: number;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__document-search
-    // Expected return: { results: Array<{ document_id: string, score: number, content: string }> }
-    console.log('[MCP] document-search:', params.query);
-    return { results: [] };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__document_search({
+        bucket_name: params.bucket_name,
+        query: params.query,
+        limit: params.limit,
+        threshold: params.threshold,
+      });
+      return { results: result.results || [] };
+    } catch (error: any) {
+      console.error('[MCP] document-search error:', error);
+      throw new Error(`Failed to search documents: ${error.message}`);
+    }
   }
 
   /**
@@ -120,11 +159,18 @@ export class RaindropClient {
     document_id?: string;
     limit?: number;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__chunk-search
-    // Expected return: { chunks: Array<{ chunk_id: string, document_id: string, content: string, score: number }> }
-    console.log('[MCP] chunk-search:', params.query);
-    return { chunks: [] };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__chunk_search({
+        bucket_name: params.bucket_name,
+        query: params.query,
+        document_id: params.document_id,
+        limit: params.limit,
+      });
+      return { chunks: result.chunks || [] };
+    } catch (error: any) {
+      console.error('[MCP] chunk-search error:', error);
+      throw new Error(`Failed to search chunks: ${error.message}`);
+    }
   }
 
   /**
@@ -135,11 +181,17 @@ export class RaindropClient {
     document_id: string;
     query: string;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__document-query
-    // Expected return: { answer: string }
-    console.log('[MCP] document-query:', params.query);
-    return { answer: '' };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__document_query({
+        bucket_name: params.bucket_name,
+        document_id: params.document_id,
+        query: params.query,
+      });
+      return { answer: result.answer || '' };
+    } catch (error: any) {
+      console.error('[MCP] document-query error:', error);
+      throw new Error(`Failed to query document: ${error.message}`);
+    }
   }
 
   // ============================================================================
@@ -152,21 +204,36 @@ export class RaindropClient {
     metadata?: Record<string, any>;
     tags?: string[];
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__put-annotation
-    // Expected return: { success: boolean, annotation_id: string }
-    console.log('[MCP] put-annotation:', params.annotation_id);
-    return { success: true, annotation_id: params.annotation_id };
+    try {
+      await (globalThis as any).mcp__raindrop_mcp__put_annotation({
+        annotation_id: params.annotation_id,
+        content: params.content,
+        metadata: params.metadata,
+        tags: params.tags,
+      });
+      return { success: true, annotation_id: params.annotation_id };
+    } catch (error: any) {
+      console.error('[MCP] put-annotation error:', error);
+      throw new Error(`Failed to put annotation: ${error.message}`);
+    }
   }
 
   async getAnnotation(params: {
     annotation_id: string;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__get-annotation
-    // Expected return: { content: string, metadata: Record<string, any>, tags: string[] }
-    console.log('[MCP] get-annotation:', params.annotation_id);
-    return { content: '', metadata: {}, tags: [] };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__get_annotation({
+        annotation_id: params.annotation_id,
+      });
+      return {
+        content: result.content || '',
+        metadata: result.metadata || {},
+        tags: result.tags || []
+      };
+    } catch (error: any) {
+      console.error('[MCP] get-annotation error:', error);
+      throw new Error(`Failed to get annotation: ${error.message}`);
+    }
   }
 
   async listAnnotations(params: {
@@ -174,11 +241,17 @@ export class RaindropClient {
     limit?: number;
     offset?: number;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__list-annotations
-    // Expected return: { annotations: Array<{ annotation_id: string, content: string, metadata: any, tags: string[] }> }
-    console.log('[MCP] list-annotations');
-    return { annotations: [] };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__list_annotations({
+        tags: params.tags,
+        limit: params.limit,
+        offset: params.offset,
+      });
+      return { annotations: result.annotations || [] };
+    } catch (error: any) {
+      console.error('[MCP] list-annotations error:', error);
+      throw new Error(`Failed to list annotations: ${error.message}`);
+    }
   }
 
   // ============================================================================
@@ -195,11 +268,19 @@ export class RaindropClient {
     timeline?: string;
     agent?: string;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__put-memory
-    // Expected return: { success: boolean, memory_id: string }
-    console.log('[MCP] put-memory:', params.key || 'unnamed');
-    return { success: true, memory_id: `mem_${Date.now()}` };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__put_memory({
+        session_id: params.session_id,
+        content: params.content,
+        key: params.key,
+        timeline: params.timeline,
+        agent: params.agent,
+      });
+      return { success: true, memory_id: result.memory_id || `mem_${Date.now()}` };
+    } catch (error: any) {
+      console.error('[MCP] put-memory error:', error);
+      throw new Error(`Failed to put memory: ${error.message}`);
+    }
   }
 
   /**
@@ -211,11 +292,18 @@ export class RaindropClient {
     timeline?: string;
     n_most_recent?: number;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__get-memory
-    // Expected return: { memories: Array<{ memory_id: string, content: string, timestamp: string }> }
-    console.log('[MCP] get-memory:', params.session_id);
-    return { memories: [] };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__get_memory({
+        session_id: params.session_id,
+        key: params.key,
+        timeline: params.timeline,
+        n_most_recent: params.n_most_recent,
+      });
+      return { memories: result.memories || [] };
+    } catch (error: any) {
+      console.error('[MCP] get-memory error:', error);
+      throw new Error(`Failed to get memory: ${error.message}`);
+    }
   }
 
   /**
@@ -227,11 +315,18 @@ export class RaindropClient {
     timeline?: string;
     n_most_recent?: number;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__search-memory
-    // Expected return: { results: Array<{ memory_id: string, content: string, relevance: number }> }
-    console.log('[MCP] search-memory:', params.terms);
-    return { results: [] };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__search_memory({
+        session_id: params.session_id,
+        terms: params.terms,
+        timeline: params.timeline,
+        n_most_recent: params.n_most_recent,
+      });
+      return { results: result.results || [] };
+    } catch (error: any) {
+      console.error('[MCP] search-memory error:', error);
+      throw new Error(`Failed to search memory: ${error.message}`);
+    }
   }
 
   /**
@@ -243,11 +338,37 @@ export class RaindropClient {
     n_most_recent?: number;
     system_prompt?: string;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__summarize-memory
-    // Expected return: { summary: string }
-    console.log('[MCP] summarize-memory:', params.session_id);
-    return { summary: '' };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__summarize_memory({
+        session_id: params.session_id,
+        timeline: params.timeline,
+        n_most_recent: params.n_most_recent,
+        system_prompt: params.system_prompt,
+      });
+      return { summary: result.summary || '' };
+    } catch (error: any) {
+      console.error('[MCP] summarize-memory error:', error);
+      throw new Error(`Failed to summarize memory: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete a specific memory entry
+   */
+  async deleteMemory(params: {
+    session_id: string;
+    memory_id: string;
+  }) {
+    try {
+      await (globalThis as any).mcp__raindrop_mcp__delete_memory({
+        session_id: params.session_id,
+        memory_id: params.memory_id,
+      });
+      return { success: true };
+    } catch (error: any) {
+      console.error('[MCP] delete-memory error:', error);
+      throw new Error(`Failed to delete memory: ${error.message}`);
+    }
   }
 
   // ============================================================================
@@ -262,11 +383,16 @@ export class RaindropClient {
     session_id: string;
     flush?: boolean; // If true, saves to episodic memory
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__end-session
-    // Expected return: { success: boolean }
-    console.log('[MCP] end-session:', params.session_id, 'flush:', params.flush);
-    return { success: true };
+    try {
+      await (globalThis as any).mcp__raindrop_mcp__end_session({
+        session_id: params.session_id,
+        flush: params.flush,
+      });
+      return { success: true };
+    } catch (error: any) {
+      console.error('[MCP] end-session error:', error);
+      throw new Error(`Failed to end session: ${error.message}`);
+    }
   }
 
   /**
@@ -277,11 +403,17 @@ export class RaindropClient {
     query: string;
     n_most_recent?: number;
   }) {
-    // Episodic memory is accessed via annotations with special tags
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__list-annotations
-    console.log('[MCP] search episodic:', params.query);
-    return { sessions: [] };
+    try {
+      // Episodic memory is accessed via annotations with special tags
+      const result = await (globalThis as any).mcp__raindrop_mcp__list_annotations({
+        tags: ['episodic'],
+        limit: params.n_most_recent,
+      });
+      return { sessions: result.annotations || [] };
+    } catch (error: any) {
+      console.error('[MCP] search episodic error:', error);
+      throw new Error(`Failed to search episodic memory: ${error.message}`);
+    }
   }
 
   // ============================================================================
@@ -298,11 +430,20 @@ export class RaindropClient {
     tags?: string[];
     metadata?: Record<string, any>;
   }) {
-    // Use annotations for semantic memory
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__put-annotation
-    console.log('[MCP] put semantic memory:', params.topic);
-    return { success: true, annotation_id: `sem_${Date.now()}` };
+    try {
+      // Use annotations for semantic memory
+      const annotation_id = `sem_${params.topic}_${Date.now()}`;
+      await (globalThis as any).mcp__raindrop_mcp__put_annotation({
+        annotation_id,
+        content: params.content,
+        tags: ['semantic', ...(params.tags || [])],
+        metadata: { topic: params.topic, ...(params.metadata || {}) },
+      });
+      return { success: true, annotation_id };
+    } catch (error: any) {
+      console.error('[MCP] put semantic memory error:', error);
+      throw new Error(`Failed to put semantic memory: ${error.message}`);
+    }
   }
 
   /**
@@ -313,10 +454,16 @@ export class RaindropClient {
     tags?: string[];
     limit?: number;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__list-annotations
-    console.log('[MCP] search semantic:', params.query);
-    return { results: [] };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__list_annotations({
+        tags: ['semantic', ...(params.tags || [])],
+        limit: params.limit,
+      });
+      return { results: result.annotations || [] };
+    } catch (error: any) {
+      console.error('[MCP] search semantic error:', error);
+      throw new Error(`Failed to search semantic memory: ${error.message}`);
+    }
   }
 
   // ============================================================================
@@ -332,31 +479,51 @@ export class RaindropClient {
     tags?: string[];
     metadata?: Record<string, any>;
   }) {
-    // Use annotations with 'procedure' tag
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__put-annotation
-    console.log('[MCP] put procedure:', params.name);
-    return { success: true, procedure_id: `proc_${Date.now()}` };
+    try {
+      // Use annotations with 'procedure' tag
+      const annotation_id = `proc_${params.name}_${Date.now()}`;
+      await (globalThis as any).mcp__raindrop_mcp__put_annotation({
+        annotation_id,
+        content: params.template,
+        tags: ['procedure', ...(params.tags || [])],
+        metadata: { name: params.name, ...(params.metadata || {}) },
+      });
+      return { success: true, procedure_id: annotation_id };
+    } catch (error: any) {
+      console.error('[MCP] put procedure error:', error);
+      throw new Error(`Failed to put procedure: ${error.message}`);
+    }
   }
 
   /**
    * Get specific procedure/template
    */
   async getProcedure(name: string) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__get-annotation
-    console.log('[MCP] get procedure:', name);
-    return { template: '' };
+    try {
+      const annotation_id = `proc_${name}`;
+      const result = await (globalThis as any).mcp__raindrop_mcp__get_annotation({
+        annotation_id,
+      });
+      return { template: result.content || '' };
+    } catch (error: any) {
+      console.error('[MCP] get procedure error:', error);
+      throw new Error(`Failed to get procedure: ${error.message}`);
+    }
   }
 
   /**
    * List all procedures
    */
   async listProcedures(tags?: string[]) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__list-annotations with tags filter
-    console.log('[MCP] list procedures');
-    return { procedures: [] };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__list_annotations({
+        tags: ['procedure', ...(tags || [])],
+      });
+      return { procedures: result.annotations || [] };
+    } catch (error: any) {
+      console.error('[MCP] list procedures error:', error);
+      throw new Error(`Failed to list procedures: ${error.message}`);
+    }
   }
 
   // ============================================================================
@@ -368,22 +535,33 @@ export class RaindropClient {
     query: string;
     parameters?: string[];
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__sql-execute-query
-    // Expected return: { rows: Array<Record<string, any>> }
-    console.log('[MCP] sql-execute-query');
-    return { rows: [] };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__sql_execute_query({
+        database_id: params.database_id,
+        query: params.query,
+        parameters: params.parameters,
+      });
+      return { rows: result.rows || [] };
+    } catch (error: any) {
+      console.error('[MCP] sql-execute-query error:', error);
+      throw new Error(`Failed to execute SQL query: ${error.message}`);
+    }
   }
 
   async sqlGetMetadata(params: {
     database_id: string;
     table_name?: string;
   }) {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__sql-get-metadata
-    // Expected return: { metadata: Record<string, any> }
-    console.log('[MCP] sql-get-metadata');
-    return { metadata: {} };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__sql_get_metadata({
+        database_id: params.database_id,
+        table_name: params.table_name,
+      });
+      return { metadata: result.metadata || {} };
+    } catch (error: any) {
+      console.error('[MCP] sql-get-metadata error:', error);
+      throw new Error(`Failed to get SQL metadata: ${error.message}`);
+    }
   }
 
   // ============================================================================
@@ -391,11 +569,13 @@ export class RaindropClient {
   // ============================================================================
 
   async startSession() {
-    // TODO: Replace with actual MCP tool call
-    // Implementation should call: mcp__raindrop-mcp__start-session
-    // Expected return: { session_id: string }
-    console.log('[MCP] start-session');
-    return { session_id: `session_${Date.now()}` };
+    try {
+      const result = await (globalThis as any).mcp__raindrop_mcp__start_session({});
+      return { session_id: result.session_id || `session_${Date.now()}` };
+    } catch (error: any) {
+      console.error('[MCP] start-session error:', error);
+      throw new Error(`Failed to start session: ${error.message}`);
+    }
   }
 }
 
