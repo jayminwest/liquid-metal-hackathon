@@ -1,0 +1,23 @@
+{
+  "name": "liquid-metal-hackathon",
+  "version": "0.1.0",
+  "description": "Personalized knowledge graph system with basic-memory + Raindrop MCP",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch api/server.ts",
+    "start": "bun run api/server.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "hono": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
