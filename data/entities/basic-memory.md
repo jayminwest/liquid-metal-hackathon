@@ -1,9 +1,14 @@
 ---
 title: basic-memory
-tags: [mcp, knowledge-graph, markdown, local-first]
+tags:
+- mcp
+- knowledge-graph
+- markdown
+- local-first
 source: hackathon-setup
-created: 2025-11-08T12:00:00Z
+created: 2025-11-08 12:00:00+00:00
 url: https://github.com/basicmachines-co/basic-memory
+permalink: entities/basic-memory
 ---
 
 # basic-memory
