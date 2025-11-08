@@ -1,8 +1,13 @@
 ---
 title: Raindrop MCP
-tags: [mcp, platform, raindrop, ai-infrastructure]
+tags:
+- mcp
+- platform
+- raindrop
+- ai-infrastructure
 source: hackathon-setup
-created: 2025-11-08T12:00:00Z
+created: 2025-11-08 12:00:00+00:00
+permalink: entities/raindrop-mcp
 ---
 
 # Raindrop MCP
