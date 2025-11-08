@@ -31,6 +31,31 @@ export class RaindropClient {
   // ============================================================================
 
   /**
+   * Convenience method: Create knowledge bucket
+   * Alias for createSmartBucket with predefined settings
+   */
+  async createKnowledgeBucket(bucket_name: string) {
+    return this.createSmartBucket({
+      bucket_name,
+      description: 'Knowledge base storage',
+      embedding_model: 'text-embedding-ada-002',
+    });
+  }
+
+  /**
+   * Convenience method: Upload document to bucket
+   * Alias for putObject with better semantics for documents
+   */
+  async uploadDocument(params: {
+    bucket_name: string;
+    key: string;
+    content: string;
+    content_type?: string;
+  }) {
+    return this.putObject(params);
+  }
+
+  /**
    * Create SmartBucket for knowledge storage
    */
   async createSmartBucket(params: {
