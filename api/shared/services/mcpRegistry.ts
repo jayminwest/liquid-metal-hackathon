@@ -73,13 +73,12 @@ export class MCPRegistryService {
   }
 
   /**
-   * Update tool status
+   * Update tool metadata
    */
-  async updateToolStatus(
+  async updateTool(
     userId: string,
     toolId: string,
-    status: 'active' | 'inactive' | 'auth_required',
-    oauthComplete?: boolean
+    updates: Partial<MCPTool>
   ) {
     if (!isValidUserId(userId)) {
       throw new Error('Invalid userId');
@@ -92,14 +91,32 @@ export class MCPRegistryService {
 
     const updatedTool = {
       ...existingTool,
-      status,
-      ...(oauthComplete !== undefined && { oauthComplete }),
+      ...updates,
       lastUpdated: new Date().toISOString(),
     };
 
     await this.annotationService.putToolMetadata(userId, toolId, updatedTool);
 
     return updatedTool;
+  }
+
+  /**
+   * Update tool status
+   */
+  async updateToolStatus(
+    userId: string,
+    toolId: string,
+    status: 'active' | 'inactive' | 'auth_required',
+    oauthComplete?: boolean
+  ) {
+    if (!isValidUserId(userId)) {
+      throw new Error('Invalid userId');
+    }
+
+    return this.updateTool(userId, toolId, {
+      status,
+      ...(oauthComplete !== undefined && { oauthComplete }),
+    });
   }
 
   /**
