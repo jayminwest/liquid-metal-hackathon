@@ -10,6 +10,15 @@ import { captureKnowledge, updateKnowledge, syncRecentChanges } from '@knowledge
 import { queryKnowledge, findRelatedEntities, getRecentKnowledge } from '@knowledge/retrieval';
 import { generateKnowledgeGraph, suggestConnections } from '@knowledge/graph';
 import type { KnowledgeEntry, QueryRequest } from '@shared/types';
+import { chat as aiChat } from '@shared/ai';
+import {
+  createConversation,
+  listConversations,
+  getConversation,
+  addMessage,
+  deleteConversation,
+} from '@shared/conversations';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 const app = new Hono();
 
@@ -204,34 +213,142 @@ knowledge.post('/upload', async (c) => {
 // Mount knowledge routes
 app.route('/api/knowledge', knowledge);
 
-// Chat endpoint
+// Conversation endpoints
+const conversations = new Hono();
+
+// List all conversations
+conversations.get('/', async (c) => {
+  try {
+    const convos = await listConversations();
+    return c.json({ conversations: convos });
+  } catch (error) {
+    return c.json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }, 500);
+  }
+});
+
+// Get specific conversation
+conversations.get('/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const conversation = await getConversation(id);
+
+    if (!conversation) {
+      return c.json({ error: 'Conversation not found' }, 404);
+    }
+
+    return c.json({ conversation });
+  } catch (error) {
+    return c.json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }, 500);
+  }
+});
+
+// Delete conversation
+conversations.delete('/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    await deleteConversation(id);
+    return c.json({ status: 'deleted', id });
+  } catch (error) {
+    return c.json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }, 500);
+  }
+});
+
+// Send message in conversation
+conversations.post('/:id/messages', async (c) => {
+  try {
+    const conversationId = c.req.param('id');
+    const { message } = await c.req.json();
+
+    if (!message) {
+      return c.json({ error: 'Message is required' }, 400);
+    }
+
+    // Get existing conversation
+    let conversation = await getConversation(conversationId);
+
+    if (!conversation) {
+      return c.json({ error: 'Conversation not found' }, 404);
+    }
+
+    // Add user message
+    conversation = await addMessage(conversationId, 'user', message);
+
+    // Build message history for AI
+    const messages: ChatCompletionMessageParam[] = conversation.messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    // Get AI response
+    const aiResponse = await aiChat(messages, conversation.sessionId);
+
+    // Add assistant message
+    conversation = await addMessage(conversationId, 'assistant', aiResponse);
+
+    return c.json({ conversation });
+  } catch (error) {
+    return c.json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }, 500);
+  }
+});
+
+app.route('/api/conversations', conversations);
+
+// Chat endpoint (creates new conversation or continues existing)
 app.post('/api/chat', async (c) => {
   try {
-    const { message } = await c.req.json();
-    const sessionId = c.req.header('X-Session-ID') || 'default-session';
+    const { message, conversationId } = await c.req.json();
 
     if (!message) {
       return c.json({
-        response: 'Please provide a message',
-        sessionId,
+        error: 'Message is required',
       }, 400);
     }
 
-    // Use knowledge query to generate response
-    const result = await queryKnowledge({
-      question: message,
-      session_id: sessionId,
-      mode: 'hybrid',
-    });
+    let conversation;
+
+    if (conversationId) {
+      // Continue existing conversation
+      conversation = await getConversation(conversationId);
+
+      if (!conversation) {
+        return c.json({ error: 'Conversation not found' }, 404);
+      }
+
+      conversation = await addMessage(conversationId, 'user', message);
+    } else {
+      // Create new conversation
+      conversation = await createConversation(message);
+    }
+
+    // Build message history for AI
+    const messages: ChatCompletionMessageParam[] = conversation.messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    // Get AI response
+    const aiResponse = await aiChat(messages, conversation.sessionId);
+
+    // Add assistant message
+    conversation = await addMessage(conversation.id, 'assistant', aiResponse);
 
     return c.json({
-      response: result.answer,
-      sessionId,
+      response: aiResponse,
+      conversationId: conversation.id,
+      conversation,
     });
   } catch (error) {
+    console.error('Chat error:', error);
     return c.json({
-      response: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      sessionId: c.req.header('X-Session-ID') || 'default-session',
+      error: error instanceof Error ? error.message : 'Unknown error',
     }, 500);
   }
 });
