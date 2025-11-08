@@ -6,6 +6,10 @@
 import { RaindropClient } from '../raindrop';
 import type { MCPClientConfig } from '../types';
 import { validateSessionId, sanitizeError } from '../validation';
+import { localStorage } from '../localStorage';
+
+// Check if MCP tools are available
+const HAS_MCP_TOOLS = typeof globalThis.mcp__raindrop_mcp__get_prompt === 'function';
 
 /**
  * Orchestration workflow state tracking
@@ -48,17 +52,28 @@ export class AgentOrchestrationService {
         validateSessionId(sessionId);
       }
 
-      const result = await globalThis.mcp__raindrop_mcp__get_prompt({
-        session_id: sessionId,
-      });
+      if (HAS_MCP_TOOLS) {
+        const result = await globalThis.mcp__raindrop_mcp__get_prompt({
+          session_id: sessionId,
+        });
 
-      return {
-        sessionId: result.session_id || sessionId || '',
-        timelineId: result.timeline_id || '',
-        prompt: result.prompt || '',
-        state: result.state || 'initial',
-        artifacts: result.artifacts || {},
-      };
+        return {
+          sessionId: result.session_id || sessionId || '',
+          timelineId: result.timeline_id || '',
+          prompt: result.prompt || '',
+          state: result.state || 'initial',
+          artifacts: result.artifacts || {},
+        };
+      } else {
+        const result = await localStorage.getPrompt(sessionId);
+        return {
+          sessionId: result.session_id,
+          timelineId: result.timeline_id,
+          prompt: result.prompt,
+          state: result.state,
+          artifacts: {},
+        };
+      }
     } catch (error: any) {
       console.error('[Orchestration] get-prompt error:', error);
       throw sanitizeError(error, 'Failed to get orchestration prompt');
@@ -83,19 +98,34 @@ export class AgentOrchestrationService {
     try {
       validateSessionId(params.sessionId);
 
-      const result = await globalThis.mcp__raindrop_mcp__update_state({
-        session_id: params.sessionId,
-        timeline_id: params.timelineId,
-        artifacts: params.artifacts,
-        status: params.status,
-        notes: params.notes,
-      });
+      if (HAS_MCP_TOOLS) {
+        const result = await globalThis.mcp__raindrop_mcp__update_state({
+          session_id: params.sessionId,
+          timeline_id: params.timelineId,
+          artifacts: params.artifacts,
+          status: params.status,
+          notes: params.notes,
+        });
 
-      return {
-        nextState: result.next_state || result.state || '',
-        prompt: result.prompt || '',
-        artifacts: result.artifacts || {},
-      };
+        return {
+          nextState: result.next_state || result.state || '',
+          prompt: result.prompt || '',
+          artifacts: result.artifacts || {},
+        };
+      } else {
+        const result = await localStorage.updateState(
+          params.sessionId,
+          params.timelineId,
+          params.artifacts,
+          params.status,
+          params.notes
+        );
+        return {
+          nextState: result.next_state,
+          prompt: result.prompt,
+          artifacts: {},
+        };
+      }
     } catch (error: any) {
       console.error('[Orchestration] update-state error:', error);
       throw sanitizeError(error, 'Failed to update orchestration state');
@@ -119,18 +149,32 @@ export class AgentOrchestrationService {
     try {
       validateSessionId(params.sessionId);
 
-      const result = await globalThis.mcp__raindrop_mcp__jump_to_state({
-        session_id: params.sessionId,
-        target_state: params.targetState,
-        mode: params.mode,
-        context_artifacts: params.contextArtifacts,
-      });
+      if (HAS_MCP_TOOLS) {
+        const result = await globalThis.mcp__raindrop_mcp__jump_to_state({
+          session_id: params.sessionId,
+          target_state: params.targetState,
+          mode: params.mode,
+          context_artifacts: params.contextArtifacts,
+        });
 
-      return {
-        state: result.state || params.targetState,
-        prompt: result.prompt || '',
-        artifacts: result.artifacts || {},
-      };
+        return {
+          state: result.state || params.targetState,
+          prompt: result.prompt || '',
+          artifacts: result.artifacts || {},
+        };
+      } else {
+        const result = await localStorage.jumpToState(
+          params.sessionId,
+          params.targetState,
+          params.mode,
+          params.contextArtifacts
+        );
+        return {
+          state: result.state,
+          prompt: result.prompt,
+          artifacts: {},
+        };
+      }
     } catch (error: any) {
       console.error('[Orchestration] jump-to-state error:', error);
       throw sanitizeError(error, 'Failed to jump to orchestration state');

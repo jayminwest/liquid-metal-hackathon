@@ -214,34 +214,65 @@ export class SimplifiedMCPRunner {
   }
 
   /**
-   * Execute a tool by extracting and running just the handler function
+   * Execute a tool by running the MCP server as a subprocess
    */
   async executeTool(
     userId: string,
     request: ToolExecutionRequest
   ): Promise<ToolExecutionResult> {
     try {
-      // Load server code
-      const serverCode = await this.mcpStorage.getServerCode(userId);
-      if (!serverCode) {
-        throw new Error('No MCP server found');
+      // Get path to server file
+      const serverPath = `.raindrop-local/user-mcp-servers/users/${userId}/mcp-server/server.ts`;
+
+      // Create MCP call tool request
+      const mcpRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: {
+          name: request.toolName,
+          arguments: request.parameters,
+        },
+      };
+
+      // Run the server and send the request
+      const proc = Bun.spawn(['bun', 'run', serverPath], {
+        stdin: 'pipe',
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+
+      // Send the request
+      proc.stdin.write(JSON.stringify(mcpRequest) + '\n');
+      proc.stdin.end();
+
+      // Read the response
+      const output = await new Response(proc.stdout).text();
+      const stderr = await new Response(proc.stderr).text();
+
+      await proc.exited;
+
+      if (stderr && !stderr.includes('MCP server')) {
+        console.error('[SimplifiedMCPRunner] Server stderr:', stderr);
       }
 
-      // Load credentials
-      const credentials = await this.mcpStorage.getCredentials(userId);
+      // Parse the MCP response
+      const lines = output.trim().split('\n');
+      for (const line of lines) {
+        try {
+          const response = JSON.parse(line);
+          if (response.result) {
+            return {
+              success: true,
+              data: response.result,
+            };
+          }
+        } catch {
+          // Skip non-JSON lines
+        }
+      }
 
-      // Extract and execute the specific handler
-      const result = await this.executeHandler(
-        serverCode,
-        request.toolName,
-        request.parameters,
-        credentials || {}
-      );
-
-      return {
-        success: true,
-        data: result,
-      };
+      throw new Error('No valid response from MCP server');
     } catch (error: any) {
       console.error(`[SimplifiedMCPRunner] Execution failed:`, error);
       return {
@@ -268,20 +299,65 @@ export class SimplifiedMCPRunner {
     const handlerName = `handle${pascalCase}`;
 
     // Extract the handler function from server code
-    const handlerRegex = new RegExp(
-      `async function ${handlerName}\\([^)]*\\)\\s*\\{[\\s\\S]*?^\\}`,
-      'm'
-    );
-    const match = serverCode.match(handlerRegex);
-    if (!match) {
+    // Match the function declaration through its closing brace
+    const functionStart = serverCode.indexOf(`async function ${handlerName}(`);
+    if (functionStart === -1) {
       throw new Error(`Handler function not found: ${handlerName}`);
     }
 
-    const handlerCode = match[0];
+    // Find the matching closing brace for the function
+    let braceCount = 0;
+    let inFunction = false;
+    let functionEnd = -1;
+
+    for (let i = functionStart; i < serverCode.length; i++) {
+      if (serverCode[i] === '{') {
+        braceCount++;
+        inFunction = true;
+      } else if (serverCode[i] === '}') {
+        braceCount--;
+        if (inFunction && braceCount === 0) {
+          functionEnd = i + 1;
+          break;
+        }
+      }
+    }
+
+    if (functionEnd === -1) {
+      throw new Error(`Could not find end of handler function: ${handlerName}`);
+    }
+
+    const handlerCode = serverCode.substring(functionStart, functionEnd);
+
+    // Strip TypeScript type annotations for eval compatibility
+    // Simple approach: just extract param names from the TypeScript signature
+    const openParen = handlerCode.indexOf('(');
+    const firstBrace = handlerCode.indexOf('{');
+
+    // Extract parameter names only (before the :)
+    const paramSection = handlerCode.substring(openParen + 1, firstBrace);
+    const paramNames = [];
+
+    // Split by comma and extract just the param name (before :)
+    const paramParts = paramSection.split(',');
+    for (const param of paramParts) {
+      const colonIndex = param.indexOf(':');
+      if (colonIndex > 0) {
+        const name = param.substring(0, colonIndex).trim();
+        if (name && !name.includes(')')) {
+          paramNames.push(name);
+        }
+      }
+    }
+
+    const functionName = handlerCode.substring(handlerCode.indexOf('function') + 9, openParen).trim();
+    const body = handlerCode.substring(firstBrace);
+
+    const strippedCode = `async function ${functionName}(${paramNames.join(', ')}) ${body}`;
 
     // Create execution environment
     const executeCode = `
-      ${handlerCode}
+      ${strippedCode}
 
       // Execute the handler
       (async () => {
@@ -292,9 +368,13 @@ export class SimplifiedMCPRunner {
     `;
 
     try {
+      // Debug: log the code being executed
+      console.log('[SimplifiedMCPRunner] Executing code snippet (first 500 chars):', executeCode.substring(0, 500));
       const result = await eval(executeCode);
       return result;
     } catch (error: any) {
+      console.error('[SimplifiedMCPRunner] Execution error:', error);
+      console.error('[SimplifiedMCPRunner] Failed code:', executeCode.substring(0, 1000));
       throw new Error(`Handler execution failed: ${error.message}`);
     }
   }

@@ -88,16 +88,21 @@ export class MCPStorageService {
 
     const key = getMCPCredentialsPath(userId);
 
-    const result = await this.raindrop.getObject({
-      bucket_name: this.bucketName,
-      key,
-    });
+    try {
+      const result = await this.raindrop.getObject({
+        bucket_name: this.bucketName,
+        key,
+      });
 
-    if (result.content) {
-      return JSON.parse(result.content);
+      if (result.content) {
+        return JSON.parse(result.content);
+      }
+
+      return null;
+    } catch (error) {
+      // Credentials file doesn't exist - that's okay
+      return null;
     }
-
-    return null;
   }
 
   /**

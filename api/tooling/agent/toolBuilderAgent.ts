@@ -65,7 +65,7 @@ export class ToolBuilderAgent {
   async analyzeRequest(userRequest: string, context?: string): Promise<ToolAnalysis> {
     try {
       const message = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
         system: TOOL_BUILDER_SYSTEM_PROMPT,
         messages: [
@@ -102,7 +102,7 @@ export class ToolBuilderAgent {
       const toolId = `${analysis.service}-${analysis.toolName}-${Date.now()}`;
 
       const message = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 4000,
         system: TOOL_BUILDER_SYSTEM_PROMPT,
         messages: [

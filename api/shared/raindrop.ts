@@ -18,11 +18,14 @@ import {
   validateContentLength,
   sanitizeError,
 } from './validation';
+import { localStorage } from './localStorage';
 
 // Runtime check for MCP tools availability
-if (typeof globalThis.mcp__raindrop_mcp__start_session !== 'function') {
-  console.warn('⚠️  MCP tools not available - requires Claude Code runtime');
-  console.warn('⚠️  This module will not function correctly outside Claude Code environment');
+const HAS_MCP_TOOLS = typeof globalThis.mcp__raindrop_mcp__start_session === 'function';
+
+if (!HAS_MCP_TOOLS) {
+  console.warn('⚠️  MCP tools not available - using local filesystem fallback');
+  console.warn('⚠️  For full functionality, run within Claude Code environment');
 }
 
 /**
@@ -109,15 +112,19 @@ export class RaindropClient {
       validateObjectKey(params.key);
       validateContentLength(params.content);
 
-      await globalThis.mcp__raindrop_mcp__put_object({
-        bucket_name: params.bucket_name,
-        key: params.key,
-        content: params.content,
-        content_type: params.content_type,
-      });
+      if (HAS_MCP_TOOLS) {
+        await globalThis.mcp__raindrop_mcp__put_object({
+          bucket_name: params.bucket_name,
+          key: params.key,
+          content: params.content,
+          content_type: params.content_type,
+        });
+      } else {
+        await localStorage.putObject(params.bucket_name, params.key, params.content);
+      }
       return { success: true, key: params.key };
     } catch (error: any) {
-      console.error('[MCP] put-object error:', error);
+      console.error('[Storage] put-object error:', error);
       throw sanitizeError(error, 'Failed to put object');
     }
   }
@@ -130,16 +137,24 @@ export class RaindropClient {
       validateBucketName(params.bucket_name);
       validateObjectKey(params.key);
 
-      const result = await globalThis.mcp__raindrop_mcp__get_object({
-        bucket_name: params.bucket_name,
-        key: params.key,
-      });
-      return {
-        content: result.content || '',
-        content_type: result.content_type || 'application/octet-stream'
-      };
+      if (HAS_MCP_TOOLS) {
+        const result = await globalThis.mcp__raindrop_mcp__get_object({
+          bucket_name: params.bucket_name,
+          key: params.key,
+        });
+        return {
+          content: result.content || '',
+          content_type: result.content_type || 'application/octet-stream'
+        };
+      } else {
+        const content = await localStorage.getObject(params.bucket_name, params.key);
+        return {
+          content,
+          content_type: 'application/octet-stream'
+        };
+      }
     } catch (error: any) {
-      console.error('[MCP] get-object error:', error);
+      console.error('[Storage] get-object error:', error);
       throw sanitizeError(error, 'Failed to get object');
     }
   }
@@ -270,15 +285,28 @@ export class RaindropClient {
       validateAnnotationId(params.annotation_id);
       validateContentLength(params.content);
 
-      await globalThis.mcp__raindrop_mcp__put_annotation({
-        annotation_id: params.annotation_id,
-        content: params.content,
-        metadata: params.metadata,
-        tags: params.tags,
-      });
+      if (HAS_MCP_TOOLS) {
+        await globalThis.mcp__raindrop_mcp__put_annotation({
+          annotation_id: params.annotation_id,
+          content: params.content,
+          metadata: params.metadata,
+          tags: params.tags,
+        });
+      } else {
+        // Local fallback: store as JSON file
+        const annotationPath = `${params.annotation_id}.json`;
+        const data = JSON.stringify({
+          id: params.annotation_id,
+          content: params.content,
+          metadata: params.metadata,
+          tags: params.tags,
+          timestamp: new Date().toISOString(),
+        }, null, 2);
+        await localStorage.putObject('annotations', annotationPath, data);
+      }
       return { success: true, annotation_id: params.annotation_id };
     } catch (error: any) {
-      console.error('[MCP] put-annotation error:', error);
+      console.error('[Storage] put-annotation error:', error);
       throw sanitizeError(error, 'Failed to put annotation');
     }
   }
@@ -464,13 +492,18 @@ export class RaindropClient {
     try {
       validateSessionId(params.session_id);
 
-      await globalThis.mcp__raindrop_mcp__end_session({
-        session_id: params.session_id,
-        flush: params.flush,
-      });
+      if (HAS_MCP_TOOLS) {
+        await globalThis.mcp__raindrop_mcp__end_session({
+          session_id: params.session_id,
+          flush: params.flush,
+        });
+      } else {
+        // Local fallback: just log session end
+        console.log(`[LocalStorage] Session ended: ${params.session_id}, flush: ${params.flush}`);
+      }
       return { success: true };
     } catch (error: any) {
-      console.error('[MCP] end-session error:', error);
+      console.error('[Storage] end-session error:', error);
       throw sanitizeError(error, 'Failed to end session');
     }
   }
@@ -659,10 +692,14 @@ export class RaindropClient {
 
   async startSession() {
     try {
-      const result = await globalThis.mcp__raindrop_mcp__start_session({});
-      return { session_id: result.session_id || `session_${Date.now()}` };
+      if (HAS_MCP_TOOLS) {
+        const result = await globalThis.mcp__raindrop_mcp__start_session({});
+        return { session_id: result.session_id || `session_${Date.now()}` };
+      } else {
+        return await localStorage.startSession();
+      }
     } catch (error: any) {
-      console.error('[MCP] start-session error:', error);
+      console.error('[Storage] start-session error:', error);
       throw sanitizeError(error, 'Failed to start session');
     }
   }

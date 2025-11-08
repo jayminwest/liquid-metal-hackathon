@@ -21,7 +21,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { RaindropClient } from './raindrop.js';
 import { MCPBuilder } from '../tooling/builder/mcpBuilder.js';
-import { MCPRunner } from '../tooling/executor/mcpRunner.js';
+import { SimplifiedMCPRunner } from '../tooling/executor/mcpRunner.js';
 
 // Initialize Raindrop client for MCP tool delegation
 // Note: RaindropClient uses MCP tools via Claude Code runtime (globalThis.mcp__raindrop_mcp__*)
@@ -41,7 +41,7 @@ const config = {
 };
 
 const mcpBuilder = new MCPBuilder(config, process.env.ANTHROPIC_API_KEY);
-const mcpRunner = new MCPRunner(config);
+const mcpRunner = new SimplifiedMCPRunner(config);
 
 /**
  * Create and configure the MCP server
@@ -614,8 +614,8 @@ export function createMCPServer() {
                 type: 'text',
                 text: JSON.stringify({
                   success: true,
-                  tools: tools.tools,
-                  count: tools.tools.length,
+                  tools: tools,
+                  count: tools.length,
                 }),
               },
             ],
@@ -625,15 +625,19 @@ export function createMCPServer() {
         case 'execute-custom-tool': {
           const { user_id, tool_id, arguments: toolArgs } = args as any;
 
-          const result = await mcpRunner.executeTool(user_id, tool_id, toolArgs || {});
+          const result = await mcpRunner.executeTool(user_id, {
+            toolName: tool_id,
+            parameters: toolArgs || {},
+          });
 
           return {
             content: [
               {
                 type: 'text',
                 text: JSON.stringify({
-                  success: true,
-                  result: result.result,
+                  success: result.success,
+                  result: result.data,
+                  error: result.error,
                   tool_id,
                 }),
               },
