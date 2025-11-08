@@ -14,21 +14,28 @@ interface MessageBubbleProps {
   message: Message;
 }
 
-// Configure marked to use highlight.js
+// Configure marked
 marked.setOptions({
-  highlight: (code, lang) => {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(code, { language: lang }).value;
-      } catch (err) {
-        console.error('Highlight error:', err);
-      }
-    }
-    return hljs.highlightAuto(code).value;
-  },
   breaks: true,
   gfm: true,
 });
+
+// Custom renderer for code blocks with highlighting
+const renderer = new marked.Renderer();
+renderer.code = function({ text, lang }: { text: string; lang?: string }) {
+  if (lang && hljs.getLanguage(lang)) {
+    try {
+      const highlighted = hljs.highlight(text, { language: lang }).value;
+      return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`;
+    } catch (err) {
+      console.error('Highlight error:', err);
+    }
+  }
+  const autoHighlighted = hljs.highlightAuto(text).value;
+  return `<pre><code class="hljs">${autoHighlighted}</code></pre>`;
+};
+
+marked.use({ renderer });
 
 export function MessageBubble({ message }: MessageBubbleProps) {
   const htmlContent = useMemo(() => {

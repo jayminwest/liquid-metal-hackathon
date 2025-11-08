@@ -2,7 +2,7 @@
  * FileUpload component - Upload button with file picker
  */
 
-import { useRef, ChangeEvent } from 'react';
+import { useRef, type ChangeEvent } from 'react';
 import './FileUpload.css';
 
 interface FileUploadProps {

@@ -2,7 +2,7 @@
  * API client for backend communication
  */
 
-import type { ChatRequest, ChatResponse, UploadResponse } from '../types';
+import type { ChatRequest, ChatResponse, UploadResponse, Message } from '../types';
 
 const API_BASE = '/api';
 

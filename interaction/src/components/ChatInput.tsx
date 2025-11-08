@@ -2,7 +2,7 @@
  * ChatInput component - Auto-resizing textarea with send button
  */
 
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, type KeyboardEvent, type ChangeEvent } from 'react';
 import './ChatInput.css';
 
 interface ChatInputProps {
@@ -49,7 +49,7 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
         ref={textareaRef}
         className="chat-input"
         value={message}
-        onChange={(e) => setMessage(e.target.value)}
+        onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
         disabled={disabled}
