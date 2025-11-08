@@ -1,0 +1,23 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/mcp.schema.json",
+  "mcpServers": {
+    "api-shared-local": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp",
+      "description": "Local api/shared MCP server with in-memory storage"
+    },
+    "basic-memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@basicmachines/basic-memory"
+      ],
+      "env": {
+        "BASIC_MEMORY_DIR": "./data"
+      },
+      "description": "Local-first knowledge graph storage with Markdown files",
+      "disabled": false
+    }
+  },
+  "globalEnvFile": ".env"
+}
