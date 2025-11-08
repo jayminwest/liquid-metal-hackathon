@@ -20,6 +20,8 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { RaindropClient } from './raindrop.js';
+import { MCPBuilder } from '../tooling/builder/mcpBuilder.js';
+import { MCPRunner } from '../tooling/executor/mcpRunner.js';
 
 // Initialize Raindrop client for MCP tool delegation
 // Note: RaindropClient uses MCP tools via Claude Code runtime (globalThis.mcp__raindrop_mcp__*)
@@ -28,6 +30,18 @@ const raindropClient = new RaindropClient({
   endpoint: 'mcp-tools', // Not used - MCP tools called directly
   auth: { type: 'bearer', token: '' }, // Not used - MCP tools called directly
 });
+
+// Initialize tooling services for custom tool creation
+const config = {
+  endpoint: process.env.RAINDROP_ENDPOINT || 'http://localhost:3000',
+  auth: {
+    type: 'bearer' as const,
+    token: process.env.RAINDROP_TOKEN || '',
+  },
+};
+
+const mcpBuilder = new MCPBuilder(config, process.env.ANTHROPIC_API_KEY);
+const mcpRunner = new MCPRunner(config);
 
 /**
  * Create and configure the MCP server
@@ -201,6 +215,86 @@ export function createMCPServer() {
             n_most_recent: { type: 'number' },
           },
           required: ['session_id'],
+        },
+      },
+
+      // ========================================================================
+      // CUSTOM TOOL BUILDING
+      // ========================================================================
+      {
+        name: 'create-custom-tool',
+        description: 'Create a custom MCP tool using natural language. The AI agent will analyze your request and generate a functional tool with OAuth integration if needed.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            user_id: {
+              type: 'string',
+              description: 'User ID for tool ownership'
+            },
+            user_request: {
+              type: 'string',
+              description: 'Natural language description of the tool (e.g., "I want to read my Slack channels")'
+            },
+            context: {
+              type: 'string',
+              description: 'Optional additional context for the tool'
+            },
+          },
+          required: ['user_id', 'user_request'],
+        },
+      },
+      {
+        name: 'list-custom-tools',
+        description: 'List all custom MCP tools created by the user',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            user_id: {
+              type: 'string',
+              description: 'User ID to list tools for'
+            },
+          },
+          required: ['user_id'],
+        },
+      },
+      {
+        name: 'execute-custom-tool',
+        description: 'Execute a custom MCP tool with provided arguments',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            user_id: {
+              type: 'string',
+              description: 'User ID who owns the tool'
+            },
+            tool_id: {
+              type: 'string',
+              description: 'ID of the tool to execute'
+            },
+            arguments: {
+              type: 'object',
+              description: 'Arguments to pass to the tool'
+            },
+          },
+          required: ['user_id', 'tool_id'],
+        },
+      },
+      {
+        name: 'delete-custom-tool',
+        description: 'Delete a custom MCP tool',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            user_id: {
+              type: 'string',
+              description: 'User ID who owns the tool'
+            },
+            tool_id: {
+              type: 'string',
+              description: 'ID of the tool to delete'
+            },
+          },
+          required: ['user_id', 'tool_id'],
         },
       },
     ],
@@ -470,6 +564,97 @@ export function createMCPServer() {
                 text: JSON.stringify({
                   memories: result.memories,
                   count: result.memories.length,
+                }),
+              },
+            ],
+          };
+        }
+
+        // ====================================================================
+        // CUSTOM TOOL BUILDING HANDLERS
+        // ====================================================================
+
+        case 'create-custom-tool': {
+          const { user_id, user_request, context } = args as any;
+
+          const result = await mcpBuilder.buildTool({
+            userId: user_id,
+            userRequest: user_request,
+            context,
+          });
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  tool_id: result.toolId,
+                  tool_name: result.toolName,
+                  status: result.status,
+                  oauth_url: result.oauthUrl,
+                  requires_oauth: result.status === 'auth_required',
+                  message: result.status === 'auth_required'
+                    ? `Tool created! Please authorize at: ${result.oauthUrl}`
+                    : 'Tool created successfully and ready to use',
+                }),
+              },
+            ],
+          };
+        }
+
+        case 'list-custom-tools': {
+          const { user_id } = args as any;
+
+          const tools = await mcpRunner.listTools(user_id);
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  tools: tools.tools,
+                  count: tools.tools.length,
+                }),
+              },
+            ],
+          };
+        }
+
+        case 'execute-custom-tool': {
+          const { user_id, tool_id, arguments: toolArgs } = args as any;
+
+          const result = await mcpRunner.executeTool(user_id, tool_id, toolArgs || {});
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  result: result.result,
+                  tool_id,
+                }),
+              },
+            ],
+          };
+        }
+
+        case 'delete-custom-tool': {
+          const { user_id, tool_id } = args as any;
+
+          // Clear cache for this user
+          await mcpRunner.clearCache(user_id);
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  deleted: tool_id,
+                  message: 'Tool marked as inactive',
                 }),
               },
             ],
