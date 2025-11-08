@@ -26,8 +26,9 @@ export class RaindropClient {
     content: string;
     content_type?: string;
   }) {
-    // In real implementation, this would call mcp__raindrop-mcp__put-object
-    // For now, this is a wrapper that will be called by services
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__put-object
+    // Expected return: { success: boolean, key: string }
     console.log('putObject:', params);
     return { success: true, key: params.key };
   }
@@ -36,7 +37,9 @@ export class RaindropClient {
     bucket_name: string;
     key: string;
   }) {
-    // In real implementation, this would call mcp__raindrop-mcp__get-object
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__get-object
+    // Expected return: { content: string, content_type: string }
     console.log('getObject:', params);
     return { content: '', content_type: 'application/octet-stream' };
   }
@@ -45,7 +48,9 @@ export class RaindropClient {
     bucket_name: string;
     key: string;
   }) {
-    // In real implementation, this would call mcp__raindrop-mcp__delete-object
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__delete-object
+    // Expected return: { success: boolean }
     console.log('deleteObject:', params);
     return { success: true };
   }
@@ -55,7 +60,9 @@ export class RaindropClient {
     prefix?: string;
     limit?: number;
   }) {
-    // In real implementation, this would call mcp__raindrop-mcp__list-objects
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__list-objects
+    // Expected return: { objects: Array<{ key: string, size: number, last_modified: string }> }
     console.log('listObjects:', params);
     return { objects: [] };
   }
@@ -67,7 +74,9 @@ export class RaindropClient {
     metadata?: Record<string, any>;
     tags?: string[];
   }) {
-    // In real implementation, this would call mcp__raindrop-mcp__put-annotation
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__put-annotation
+    // Expected return: { success: boolean, annotation_id: string }
     console.log('putAnnotation:', params);
     return { success: true, annotation_id: params.annotation_id };
   }
@@ -75,7 +84,9 @@ export class RaindropClient {
   async getAnnotation(params: {
     annotation_id: string;
   }) {
-    // In real implementation, this would call mcp__raindrop-mcp__get-annotation
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__get-annotation
+    // Expected return: { content: string, metadata: Record<string, any>, tags: string[] }
     console.log('getAnnotation:', params);
     return { content: '', metadata: {}, tags: [] };
   }
@@ -85,7 +96,9 @@ export class RaindropClient {
     limit?: number;
     offset?: number;
   }) {
-    // In real implementation, this would call mcp__raindrop-mcp__list-annotations
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__list-annotations
+    // Expected return: { annotations: Array<{ annotation_id: string, content: string, metadata: any, tags: string[] }> }
     console.log('listAnnotations:', params);
     return { annotations: [] };
   }
@@ -96,7 +109,9 @@ export class RaindropClient {
     description?: string;
     embedding_model?: string;
   }) {
-    // In real implementation, this would call mcp__raindrop-mcp__create-smartbucket
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__create-smartbucket
+    // Expected return: { success: boolean, bucket_name: string }
     console.log('createSmartBucket:', params);
     return { success: true, bucket_name: params.bucket_name };
   }
@@ -109,7 +124,9 @@ export class RaindropClient {
     timeline?: string;
     agent?: string;
   }) {
-    // TODO: Call mcp__raindrop-mcp__put-memory
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__put-memory
+    // Expected return: { success: boolean, memory_id: string }
     console.log('putMemory:', params);
     return { success: true, memory_id: `mem_${Date.now()}` };
   }
@@ -120,7 +137,9 @@ export class RaindropClient {
     timeline?: string;
     n_most_recent?: number;
   }) {
-    // TODO: Call mcp__raindrop-mcp__get-memory
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__get-memory
+    // Expected return: { memories: Array<{ memory_id: string, content: string, timestamp: string }> }
     console.log('getMemory:', params);
     return { memories: [] };
   }
@@ -131,7 +150,9 @@ export class RaindropClient {
     timeline?: string;
     n_most_recent?: number;
   }) {
-    // TODO: Call mcp__raindrop-mcp__search-memory
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__search-memory
+    // Expected return: { results: Array<{ memory_id: string, content: string, relevance: number }> }
     console.log('searchMemory:', params);
     return { results: [] };
   }
@@ -142,7 +163,9 @@ export class RaindropClient {
     n_most_recent?: number;
     system_prompt?: string;
   }) {
-    // TODO: Call mcp__raindrop-mcp__summarize-memory
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__summarize-memory
+    // Expected return: { summary: string }
     console.log('summarizeMemory:', params);
     return { summary: '' };
   }
@@ -154,7 +177,9 @@ export class RaindropClient {
     limit?: number;
     threshold?: number;
   }) {
-    // TODO: Call mcp__raindrop-mcp__document-search
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__document-search
+    // Expected return: { results: Array<{ document_id: string, score: number, content: string }> }
     console.log('documentSearch:', params);
     return { results: [] };
   }
@@ -165,7 +190,9 @@ export class RaindropClient {
     document_id?: string;
     limit?: number;
   }) {
-    // TODO: Call mcp__raindrop-mcp__chunk-search
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__chunk-search
+    // Expected return: { chunks: Array<{ chunk_id: string, document_id: string, content: string, score: number }> }
     console.log('chunkSearch:', params);
     return { chunks: [] };
   }
@@ -175,7 +202,9 @@ export class RaindropClient {
     document_id: string;
     query: string;
   }) {
-    // TODO: Call mcp__raindrop-mcp__document-query
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__document-query
+    // Expected return: { answer: string }
     console.log('documentQuery:', params);
     return { answer: '' };
   }
@@ -186,7 +215,9 @@ export class RaindropClient {
     query: string;
     parameters?: string[];
   }) {
-    // TODO: Call mcp__raindrop-mcp__sql-execute-query
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__sql-execute-query
+    // Expected return: { rows: Array<Record<string, any>> }
     console.log('sqlExecuteQuery:', params);
     return { rows: [] };
   }
@@ -195,14 +226,18 @@ export class RaindropClient {
     database_id: string;
     table_name?: string;
   }) {
-    // TODO: Call mcp__raindrop-mcp__sql-get-metadata
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__sql-get-metadata
+    // Expected return: { metadata: Record<string, any> }
     console.log('sqlGetMetadata:', params);
     return { metadata: {} };
   }
 
   // Session Management
   async startSession() {
-    // TODO: Call mcp__raindrop-mcp__start-session
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__start-session
+    // Expected return: { session_id: string }
     console.log('startSession');
     return { session_id: `session_${Date.now()}` };
   }
@@ -211,7 +246,9 @@ export class RaindropClient {
     session_id: string;
     flush?: boolean;
   }) {
-    // TODO: Call mcp__raindrop-mcp__end-session
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__end-session
+    // Expected return: { success: boolean }
     console.log('endSession:', params);
     return { success: true };
   }
