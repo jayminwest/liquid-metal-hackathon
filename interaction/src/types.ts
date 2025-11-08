@@ -41,3 +41,9 @@ export interface UploadResponse {
   entity_path?: string;
   error?: string;
 }
+
+export interface StatusUpdate {
+  type: 'status' | 'response' | 'error' | 'done' | 'metadata';
+  message: string;
+  conversationId?: string;
+}

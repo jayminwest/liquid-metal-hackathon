@@ -3,12 +3,14 @@
  */
 
 import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github-dark.css';
+import { User, Bot } from 'lucide-react';
 import type { Message } from '../types';
-import './MessageBubble.css';
+import { cn } from '../lib/utils';
 
 interface MessageBubbleProps {
   message: Message;
@@ -50,20 +52,48 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     });
   }, [message.timestamp]);
 
+  const isUser = message.role === 'user';
+
   return (
-    <div className={`message-bubble message-${message.role}`}>
-      <div className="message-header">
-        <span className="message-role">
-          {message.role === 'user' ? 'You' : 'Assistant'}
-        </span>
-        <span className="message-time text-muted text-small">
-          {formattedTime}
-        </span>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className={cn(
+        'flex gap-3 p-4 rounded-lg mb-4',
+        isUser ? 'bg-secondary/50' : 'bg-card'
+      )}
+    >
+      <div className={cn(
+        'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
+        isUser ? 'bg-primary' : 'bg-accent'
+      )}>
+        {isUser ? (
+          <User className="h-4 w-4 text-primary-foreground" />
+        ) : (
+          <Bot className="h-4 w-4 text-accent-foreground" />
+        )}
       </div>
-      <div
-        className="message-content"
-        dangerouslySetInnerHTML={{ __html: htmlContent }}
-      />
-    </div>
+
+      <div className="flex-1 space-y-2 overflow-hidden">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold">
+            {isUser ? 'You' : 'Assistant'}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {formattedTime}
+          </span>
+        </div>
+        <div
+          className={cn(
+            'prose prose-sm dark:prose-invert max-w-none',
+            'prose-pre:bg-secondary prose-pre:border prose-pre:border-border',
+            'prose-code:text-primary prose-code:bg-secondary prose-code:px-1 prose-code:py-0.5 prose-code:rounded',
+            'prose-a:text-primary hover:prose-a:text-primary/80'
+          )}
+          dangerouslySetInnerHTML={{ __html: htmlContent }}
+        />
+      </div>
+    </motion.div>
   );
 }

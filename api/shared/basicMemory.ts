@@ -204,14 +204,20 @@ export class BasicMemoryClient {
     path?: string;
   }) {
     const dirPath = this.getFullPath(params?.path || '');
+    console.log('[basicMemory] listDirectory - dirPath:', dirPath);
     try {
+      // Ensure directory exists before reading
+      await this.ensureDir(dirPath);
+      console.log('[basicMemory] Directory ensured');
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
+      console.log('[basicMemory] Found entries:', entries.length);
       const files = entries.map(entry => ({
         name: entry.name,
         isDirectory: entry.isDirectory(),
       }));
       return { files };
     } catch (error) {
+      console.error('[basicMemory] List directory error for path:', dirPath, error);
       return { files: [] };
     }
   }
@@ -222,7 +228,7 @@ export class BasicMemoryClient {
   }
 
   async getEntity(name: string) {
-    const filePath = name.endsWith('.md') ? name : `${name}.md`;
+    const filePath = name.endsWith('.md') ? name : `entities/${name}.md`;
     const result = await this.readNote({ path: filePath });
     return result.content ? { content: result.content, path: filePath } : null;
   }
@@ -239,7 +245,7 @@ export class BasicMemoryClient {
   }
 
   async deleteEntity(name: string) {
-    const filePath = name.endsWith('.md') ? name : `${name}.md`;
+    const filePath = name.endsWith('.md') ? name : `entities/${name}.md`;
     return await this.deleteNote({ path: filePath });
   }
 }

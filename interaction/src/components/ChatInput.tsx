@@ -3,7 +3,9 @@
  */
 
 import { useState, useRef, useEffect, type KeyboardEvent, type ChangeEvent } from 'react';
-import './ChatInput.css';
+import { Send } from 'lucide-react';
+import { Button } from './ui/button';
+import { cn } from '../lib/utils';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -44,10 +46,16 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
   };
 
   return (
-    <div className="chat-input-container">
+    <div className="flex items-end gap-2 p-4 border-t border-border bg-card">
       <textarea
         ref={textareaRef}
-        className="chat-input"
+        className={cn(
+          'flex-1 resize-none rounded-lg border border-input bg-background px-4 py-3',
+          'text-sm placeholder:text-muted-foreground',
+          'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+          'disabled:cursor-not-allowed disabled:opacity-50',
+          'transition-all duration-200'
+        )}
         value={message}
         onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
@@ -55,13 +63,14 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
         disabled={disabled}
         rows={1}
       />
-      <button
-        className="send-button"
+      <Button
         onClick={handleSend}
         disabled={disabled || !message.trim()}
+        size="icon"
+        className="h-11 w-11 shrink-0"
       >
-        Send
-      </button>
+        <Send className="h-4 w-4" />
+      </Button>
     </div>
   );
 }

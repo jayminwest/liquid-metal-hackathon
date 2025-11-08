@@ -6,11 +6,12 @@
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
+import { stream } from 'hono/streaming';
 import { captureKnowledge, updateKnowledge, syncRecentChanges } from '@knowledge/sync';
 import { queryKnowledge, findRelatedEntities, getRecentKnowledge } from '@knowledge/retrieval';
 import { generateKnowledgeGraph, suggestConnections } from '@knowledge/graph';
 import type { KnowledgeEntry, QueryRequest } from '@shared/types';
-import { chat as aiChat } from '@shared/ai';
+import { chat as aiChat, chatStream } from '@shared/ai';
 import {
   createConversation,
   listConversations,
@@ -18,6 +19,7 @@ import {
   addMessage,
   deleteConversation,
 } from '@shared/conversations';
+import { getBasicMemoryClient } from '@shared/basicMemory';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 const app = new Hono();
@@ -149,6 +151,50 @@ knowledge.post('/sync', async (c) => {
     const result = await syncRecentChanges(sessionId, limit);
 
     return c.json(result);
+  } catch (error) {
+    return c.json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }, 500);
+  }
+});
+
+// Health check
+knowledge.get('/health', async (c) => {
+  console.log('[health] Health check requested');
+  return c.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Browse data directory
+knowledge.get('/browse', async (c) => {
+  console.log('[browse] ===== REQUEST RECEIVED =====');
+  try {
+    const path = c.req.query('path') || '';
+    console.log('[browse] Path parameter:', path);
+    console.log('[browse] Getting basicMemory client...');
+    const basicMemory = await getBasicMemoryClient();
+    console.log('[browse] Client obtained, calling listDirectory...');
+    const result = await basicMemory.listDirectory({ path });
+    console.log('[browse] listDirectory returned, files:', result.files.length);
+    console.log('[browse] Sending JSON response...');
+    return c.json(result);
+  } catch (error) {
+    console.error('[browse] ERROR CAUGHT:', error);
+    return c.json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }, 500);
+  }
+});
+
+// Read markdown file
+knowledge.get('/file', async (c) => {
+  try {
+    const path = c.req.query('path');
+    if (!path) {
+      return c.json({ error: 'Path is required' }, 400);
+    }
+    const basicMemory = await getBasicMemoryClient();
+    const result = await basicMemory.readNote({ path });
+    return c.json({ content: result.content, path });
   } catch (error) {
     return c.json({
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -300,6 +346,100 @@ conversations.post('/:id/messages', async (c) => {
 });
 
 app.route('/api/conversations', conversations);
+
+// Test endpoint
+app.get('/api/test', (c) => {
+  console.log('[TEST] Test endpoint hit!');
+  return c.json({ message: 'Backend is working!', timestamp: new Date().toISOString() });
+});
+
+// Streaming chat endpoint (Server-Sent Events)
+app.post('/api/chat/stream', async (c) => {
+  console.log('[/api/chat/stream] ===== REQUEST RECEIVED =====');
+  try {
+    const { message, conversationId } = await c.req.json();
+    console.log('[/api/chat/stream] Message:', message?.substring(0, 50), 'ConvID:', conversationId);
+
+    if (!message) {
+      return c.json({
+        error: 'Message is required',
+      }, 400);
+    }
+
+    let conversation;
+
+    if (conversationId) {
+      // Continue existing conversation
+      console.log('[/api/chat/stream] Getting existing conversation:', conversationId);
+      conversation = await getConversation(conversationId);
+
+      if (!conversation) {
+        return c.json({ error: 'Conversation not found' }, 404);
+      }
+
+      conversation = await addMessage(conversationId, 'user', message);
+    } else {
+      // Create new conversation
+      console.log('[/api/chat/stream] Creating new conversation');
+      conversation = await createConversation(message);
+      console.log('[/api/chat/stream] New conversation ID:', conversation.id);
+    }
+
+    // Build message history for AI
+    const messages: ChatCompletionMessageParam[] = conversation.messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+    console.log('[/api/chat/stream] Message history length:', messages.length);
+
+    // Set headers for SSE before streaming
+    c.header('Content-Type', 'text/event-stream');
+    c.header('Cache-Control', 'no-cache');
+    c.header('Connection', 'keep-alive');
+
+    let responseContent = '';
+
+    console.log('[/api/chat/stream] Starting stream...');
+    // Use streaming helper
+    return stream(c, async (stream) => {
+      console.log('[/api/chat/stream] Inside stream callback');
+      try {
+        // Stream status updates
+        console.log('[/api/chat/stream] Starting chatStream iteration');
+        for await (const update of chatStream(messages, conversation.sessionId)) {
+          console.log('[SSE] Sending update:', update.type, update.message.substring(0, 50));
+          await stream.write(`data: ${JSON.stringify(update)}\n\n`);
+
+          if (update.type === 'response') {
+            responseContent = update.message;
+          }
+        }
+
+        // Add assistant message to conversation
+        if (responseContent) {
+          await addMessage(conversation.id, 'assistant', responseContent);
+        }
+
+        // Send conversation ID at the end
+        await stream.write(`data: ${JSON.stringify({
+          type: 'metadata',
+          conversationId: conversation.id
+        })}\n\n`);
+      } catch (error) {
+        console.error('Streaming error:', error);
+        await stream.write(`data: ${JSON.stringify({
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Unknown error'
+        })}\n\n`);
+      }
+    });
+  } catch (error) {
+    console.error('Chat stream error:', error);
+    return c.json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }, 500);
+  }
+});
 
 // Chat endpoint (creates new conversation or continues existing)
 app.post('/api/chat', async (c) => {

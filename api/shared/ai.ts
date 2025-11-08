@@ -36,11 +36,15 @@ export async function hybridRetrieval(query: string, sessionId: string): Promise
 
     // 2. Search Raindrop (semantic/cloud)
     const raindrop = getRaindropClient();
-    const cloudResults = await raindrop.searchMemory(sessionId, query, 5);
+    const cloudResults = await raindrop.searchMemory({
+      session_id: sessionId,
+      terms: query,
+      n_most_recent: 5,
+    });
 
-    if (cloudResults && cloudResults.length > 0) {
+    if (cloudResults.results && cloudResults.results.length > 0) {
       results.push('\n## Cloud Knowledge (Raindrop):\n');
-      for (const result of cloudResults) {
+      for (const result of cloudResults.results) {
         results.push(`- ${result.content?.substring(0, 200)}...`);
       }
     }
@@ -159,7 +163,127 @@ async function executeToolCall(
 }
 
 /**
- * Chat with GPT-5 using hybrid retrieval and MCP tools
+ * Status update type for streaming
+ */
+export interface StatusUpdate {
+  type: 'status' | 'response' | 'error' | 'done';
+  message: string;
+}
+
+/**
+ * Chat with GPT-5 using hybrid retrieval and MCP tools (streaming version)
+ */
+export async function* chatStream(
+  messages: ChatCompletionMessageParam[],
+  sessionId: string
+): AsyncGenerator<StatusUpdate> {
+  try {
+    console.log('[chatStream] Starting stream for session:', sessionId);
+
+    // First, do hybrid retrieval for the latest user message
+    yield { type: 'status', message: 'Searching local knowledge base...' };
+    console.log('[chatStream] Yielded: Searching local knowledge base');
+
+    const lastUserMessage = messages.filter((m) => m.role === 'user').pop();
+    let context = '';
+
+    if (lastUserMessage && typeof lastUserMessage.content === 'string') {
+      yield { type: 'status', message: 'Searching cloud knowledge...' };
+      console.log('[chatStream] Yielded: Searching cloud knowledge');
+
+      try {
+        context = await hybridRetrieval(lastUserMessage.content, sessionId);
+        console.log('[chatStream] Hybrid retrieval complete, context length:', context.length);
+      } catch (error) {
+        console.error('[chatStream] Hybrid retrieval error:', error);
+        context = '';
+      }
+    }
+
+    // Build system message with context
+    const systemMessage: ChatCompletionMessageParam = {
+      role: 'system',
+      content: `You are a helpful AI assistant with access to a personal knowledge base.
+
+${context ? `Here is relevant context from the knowledge base:\n${context}\n\n` : ''}
+
+You have access to tools to search, read, and create knowledge entities. Use them when helpful.
+
+Always provide accurate, well-reasoned responses based on the available knowledge.`,
+    };
+
+    // Call GPT-5 with tools
+    yield { type: 'status', message: 'Generating response...' };
+    console.log('[chatStream] Yielded: Generating response');
+
+    console.log('[chatStream] Calling OpenAI API...');
+    const response = await openai.chat.completions.create({
+      model: DEFAULT_MODEL,
+      messages: [systemMessage, ...messages],
+      tools: basicMemoryTools,
+      tool_choice: 'auto',
+    });
+    console.log('[chatStream] OpenAI API call complete');
+
+    const assistantMessage = response.choices[0].message;
+
+    // Handle tool calls
+    if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+      console.log('[chatStream] Tool calls detected:', assistantMessage.tool_calls.length);
+      yield { type: 'status', message: 'Executing knowledge tools...' };
+
+      const toolMessages: ChatCompletionMessageParam[] = [];
+
+      // Execute all tool calls
+      for (const toolCall of assistantMessage.tool_calls) {
+        const args = JSON.parse(toolCall.function.arguments);
+        const result = await executeToolCall(toolCall.function.name, args, sessionId);
+
+        toolMessages.push({
+          role: 'tool',
+          tool_call_id: toolCall.id,
+          content: result,
+        });
+      }
+
+      // Get final response with tool results
+      yield { type: 'status', message: 'Finalizing response...' };
+      console.log('[chatStream] Yielded: Finalizing response');
+
+      const finalResponse = await openai.chat.completions.create({
+        model: DEFAULT_MODEL,
+        messages: [
+          systemMessage,
+          ...messages,
+          assistantMessage,
+          ...toolMessages,
+        ],
+      });
+
+      const finalContent = finalResponse.choices[0].message.content || 'No response generated';
+      console.log('[chatStream] Final content length:', finalContent.length);
+      yield { type: 'response', message: finalContent };
+      yield { type: 'done', message: '' };
+      console.log('[chatStream] Stream complete (with tools)');
+      return;
+    }
+
+    const content = assistantMessage.content || 'No response generated';
+    console.log('[chatStream] Content length:', content.length);
+    yield { type: 'response', message: content };
+    yield { type: 'done', message: '' };
+    console.log('[chatStream] Stream complete (without tools)');
+  } catch (error) {
+    console.error('[chatStream] ERROR:', error);
+    yield {
+      type: 'error',
+      message: `AI service error: ${error instanceof Error ? error.message : 'Unknown error'}`
+    };
+  }
+}
+
+/**
+ * Chat with GPT-5 using hybrid retrieval and MCP tools (non-streaming version)
  */
 export async function chat(
   messages: ChatCompletionMessageParam[],

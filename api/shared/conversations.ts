@@ -148,15 +148,11 @@ export async function saveConversation(conversation: Conversation): Promise<void
     // 2. Sync to Raindrop working memory
     const raindrop = getRaindropClient();
     for (const msg of conversation.messages) {
-      await raindrop.storeMemory(
-        conversation.sessionId,
-        `${msg.role}: ${msg.content}`,
-        {
-          role: msg.role,
-          timestamp: msg.timestamp,
-          conversationId: conversation.id,
-        }
-      );
+      await raindrop.putMemory({
+        session_id: conversation.sessionId,
+        content: `${msg.role}: ${msg.content}`,
+        key: `msg_${msg.timestamp}`,
+      });
     }
   } catch (error) {
     console.error('Error saving conversation:', error);
@@ -214,18 +210,26 @@ export async function getConversation(id: string): Promise<Conversation | null> 
 export async function listConversations(): Promise<Conversation[]> {
   try {
     const basicMemory = await getBasicMemoryClient();
-    const results = await basicMemory.search({
-      query: 'tag:conversation',
-      limit: 100,
+
+    // List directory instead of using search
+    const dirList = await basicMemory.listDirectory({
+      path: 'entities/conversations'
     });
 
     const conversations: Conversation[] = [];
 
-    for (const result of results) {
-      if (result.content && result.path) {
-        const id = result.path.replace('conversations/', '').replace('.md', '');
-        const conv = markdownToConversation(result.content, id);
-        conversations.push(conv);
+    for (const file of dirList.files) {
+      if (!file.isDirectory && file.name.endsWith('.md')) {
+        try {
+          const id = file.name.replace('.md', '');
+          const entity = await basicMemory.getEntity(`conversations/${id}`);
+          if (entity && entity.content) {
+            const conv = markdownToConversation(entity.content, id);
+            conversations.push(conv);
+          }
+        } catch (err) {
+          console.error(`Error loading conversation ${file.name}:`, err);
+        }
       }
     }
 

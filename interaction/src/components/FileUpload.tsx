@@ -3,7 +3,8 @@
  */
 
 import { useRef, type ChangeEvent } from 'react';
-import './FileUpload.css';
+import { Upload } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -36,23 +37,25 @@ export function FileUpload({ onFileSelect, disabled = false }: FileUploadProps) 
   };
 
   return (
-    <div className="file-upload">
+    <>
       <input
         ref={inputRef}
         type="file"
         accept={ACCEPTED_TYPES}
         onChange={handleFileChange}
-        style={{ display: 'none' }}
+        className="hidden"
         disabled={disabled}
       />
-      <button
-        className="upload-button"
+      <Button
+        variant="outline"
+        size="sm"
         onClick={handleClick}
         disabled={disabled}
         title="Upload file (.txt, .md, .pdf)"
       >
-        📎 Upload
-      </button>
-    </div>
+        <Upload className="h-4 w-4" />
+        Upload
+      </Button>
+    </>
   );
 }
