@@ -1,0 +1,21 @@
+.file-upload {
+  display: inline-block;
+}
+
+.upload-button {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.upload-button:hover:not(:disabled) {
+  background: var(--border-color);
+  border-color: var(--text-muted);
+}
+
+.upload-button:active:not(:disabled) {
+  background: var(--text-muted);
+}

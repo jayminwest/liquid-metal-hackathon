@@ -676,3 +676,8 @@ export const raindrop = new RaindropClient({
     token: process.env.RAINDROP_TOKEN || '',
   },
 });
+
+// Export a function to get the singleton instance
+export function getRaindropClient(): RaindropClient {
+  return raindrop;
+}
