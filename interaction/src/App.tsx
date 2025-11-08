@@ -1,50 +1,72 @@
 /**
- * Main App component - Chat interface
+ * Main App component - Chat interface with sidebar
  */
 
 import { MessageBubble } from './components/MessageBubble';
 import { ChatInput } from './components/ChatInput';
 import { TypingIndicator } from './components/TypingIndicator';
 import { FileUpload } from './components/FileUpload';
+import { Sidebar } from './components/Sidebar';
 import { useChat } from './hooks/useChat';
 import './App.css';
 
 function App() {
-  const { messages, isLoading, messagesEndRef, sendMessage, uploadFile } = useChat();
+  const {
+    conversations,
+    currentConversationId,
+    messages,
+    isLoading,
+    messagesEndRef,
+    sendMessage,
+    uploadFile,
+    newConversation,
+    selectConversation,
+    deleteConversation,
+  } = useChat();
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <div className="header-content">
-          <h1>Knowledge Assistant</h1>
-          <FileUpload onFileSelect={uploadFile} disabled={isLoading} />
-        </div>
-      </header>
+    <div className="app-container">
+      <Sidebar
+        conversations={conversations}
+        currentConversationId={currentConversationId}
+        onSelectConversation={selectConversation}
+        onNewConversation={newConversation}
+        onDeleteConversation={deleteConversation}
+      />
 
-      <main className="messages-container">
-        <div className="messages-list">
-          {messages.length === 0 && (
-            <div className="empty-state">
-              <h2>Welcome to your Knowledge Assistant</h2>
-              <p className="text-muted">
-                Ask me anything about your knowledge base, or upload documents to get started.
-              </p>
-            </div>
-          )}
+      <div className="app">
+        <header className="app-header">
+          <div className="header-content">
+            <h1>Knowledge Assistant</h1>
+            <FileUpload onFileSelect={uploadFile} disabled={isLoading} />
+          </div>
+        </header>
 
-          {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
-          ))}
+        <main className="messages-container">
+          <div className="messages-list">
+            {messages.length === 0 && (
+              <div className="empty-state">
+                <h2>Welcome to your Knowledge Assistant</h2>
+                <p className="text-muted">
+                  Ask me anything about your knowledge base, or upload documents to get started.
+                </p>
+              </div>
+            )}
 
-          {isLoading && <TypingIndicator />}
+            {messages.map((message) => (
+              <MessageBubble key={message.id} message={message} />
+            ))}
 
-          <div ref={messagesEndRef} />
-        </div>
-      </main>
+            {isLoading && <TypingIndicator />}
 
-      <footer className="app-footer">
-        <ChatInput onSend={sendMessage} disabled={isLoading} />
-      </footer>
+            <div ref={messagesEndRef} />
+          </div>
+        </main>
+
+        <footer className="app-footer">
+          <ChatInput onSend={sendMessage} disabled={isLoading} />
+        </footer>
+      </div>
     </div>
   );
 }

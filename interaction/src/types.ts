@@ -9,14 +9,30 @@ export interface Message {
   timestamp: Date;
 }
 
+export interface Conversation {
+  id: string;
+  title: string;
+  messages: ConversationMessage[];
+  createdAt: string;
+  updatedAt: string;
+  sessionId: string;
+}
+
+export interface ConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
 export interface ChatRequest {
   message: string;
-  sessionId?: string;
+  conversationId?: string;
 }
 
 export interface ChatResponse {
   response: string;
-  sessionId: string;
+  conversationId: string;
+  conversation: Conversation;
 }
 
 export interface UploadResponse {

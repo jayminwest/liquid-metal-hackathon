@@ -2,7 +2,7 @@
  * API client for backend communication
  */
 
-import type { ChatRequest, ChatResponse, UploadResponse, Message } from '../types';
+import type { ChatRequest, ChatResponse, UploadResponse, Message, Conversation } from '../types';
 
 const API_BASE = '/api';
 
@@ -11,15 +11,14 @@ const API_BASE = '/api';
  */
 export async function sendMessage(
   message: string,
-  sessionId?: string
+  conversationId?: string
 ): Promise<ChatResponse> {
   const response = await fetch(`${API_BASE}/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(sessionId && { 'X-Session-ID': sessionId }),
     },
-    body: JSON.stringify({ message } as ChatRequest),
+    body: JSON.stringify({ message, conversationId } as ChatRequest),
   });
 
   if (!response.ok) {
@@ -55,18 +54,42 @@ export async function uploadFile(
 }
 
 /**
- * Get chat history (optional for future implementation)
+ * List all conversations
  */
-export async function getChatHistory(sessionId: string): Promise<Message[]> {
-  const response = await fetch(`${API_BASE}/chat/history`, {
-    headers: {
-      'X-Session-ID': sessionId,
-    },
+export async function listConversations(): Promise<Conversation[]> {
+  const response = await fetch(`${API_BASE}/conversations`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch conversations: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.conversations;
+}
+
+/**
+ * Get specific conversation
+ */
+export async function getConversation(id: string): Promise<Conversation> {
+  const response = await fetch(`${API_BASE}/conversations/${id}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch conversation: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.conversation;
+}
+
+/**
+ * Delete conversation
+ */
+export async function deleteConversation(id: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/conversations/${id}`, {
+    method: 'DELETE',
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch history: ${response.statusText}`);
+    throw new Error(`Failed to delete conversation: ${response.statusText}`);
   }
-
-  return response.json();
 }
