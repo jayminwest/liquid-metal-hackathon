@@ -242,6 +242,47 @@ export interface MCPSQLGetMetadataResult {
   metadata: Record<string, any>;
 }
 
+// Orchestration types
+export interface MCPGetPromptParams {
+  session_id?: string;
+}
+
+export interface MCPGetPromptResult {
+  session_id: string;
+  timeline_id: string;
+  prompt: string;
+  state: string;
+  artifacts?: Record<string, any>;
+}
+
+export interface MCPUpdateStateParams {
+  session_id: string;
+  timeline_id: string;
+  artifacts: Record<string, any>;
+  status: 'complete' | 'failed' | 'blocked';
+  notes?: string;
+}
+
+export interface MCPUpdateStateResult {
+  next_state?: string;
+  state?: string;
+  prompt: string;
+  artifacts: Record<string, any>;
+}
+
+export interface MCPJumpToStateParams {
+  session_id: string;
+  target_state: 'merge_features' | 'endpoint_test';
+  mode: 'feature_addition' | 'debug';
+  context_artifacts?: Record<string, any>;
+}
+
+export interface MCPJumpToStateResult {
+  state: string;
+  prompt: string;
+  artifacts: Record<string, any>;
+}
+
 // Global MCP tool declarations
 declare global {
   var mcp__raindrop_mcp__create_smartbucket: (
@@ -323,6 +364,18 @@ declare global {
   var mcp__raindrop_mcp__sql_get_metadata: (
     params: MCPSQLGetMetadataParams
   ) => Promise<MCPSQLGetMetadataResult>;
+
+  var mcp__raindrop_mcp__get_prompt: (
+    params: MCPGetPromptParams
+  ) => Promise<MCPGetPromptResult>;
+
+  var mcp__raindrop_mcp__update_state: (
+    params: MCPUpdateStateParams
+  ) => Promise<MCPUpdateStateResult>;
+
+  var mcp__raindrop_mcp__jump_to_state: (
+    params: MCPJumpToStateParams
+  ) => Promise<MCPJumpToStateResult>;
 }
 
 export {};

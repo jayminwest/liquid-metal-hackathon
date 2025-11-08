@@ -9,6 +9,7 @@ import { SmartBucketService } from './services/smartbucket';
 import { SmartMemoryService } from './services/smartmemory';
 import { MCPStorageService } from './services/mcpStorage';
 import { MCPRegistryService } from './services/mcpRegistry';
+import { AgentOrchestrationService } from './services/agentOrchestration';
 import { createMCPServer } from './mcp-server';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 
@@ -32,6 +33,7 @@ const smartBucketService = new SmartBucketService(config);
 const smartMemoryService = new SmartMemoryService(config);
 const mcpStorageService = new MCPStorageService(config);
 const mcpRegistryService = new MCPRegistryService(config);
+const agentOrchestrationService = new AgentOrchestrationService(config);
 
 // MCP Server instance
 const mcpServer = createMCPServer();
@@ -265,3 +267,27 @@ export default {
   port,
   fetch: app.fetch,
 };
+
+// Export services for use by other modules
+export {
+  annotationService,
+  smartBucketService,
+  smartMemoryService,
+  mcpStorageService,
+  mcpRegistryService,
+  agentOrchestrationService,
+};
+
+// Export service classes
+export { AnnotationService } from './services/annotation';
+export { SmartBucketService } from './services/smartbucket';
+export { SmartMemoryService } from './services/smartmemory';
+export { MCPStorageService } from './services/mcpStorage';
+export { MCPRegistryService } from './services/mcpRegistry';
+export { AgentOrchestrationService } from './services/agentOrchestration';
+
+// Export utilities
+export { successResponse, errorResponse } from './utils/response';
+export { userContext, optionalUserContext } from './middleware/userContext';
+export * from './utils/userScoping';
+export * from './utils/validation';
