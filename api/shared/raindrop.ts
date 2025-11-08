@@ -19,6 +19,12 @@ import {
   sanitizeError,
 } from './validation';
 
+// Runtime check for MCP tools availability
+if (typeof globalThis.mcp__raindrop_mcp__start_session !== 'function') {
+  console.warn('⚠️  MCP tools not available - requires Claude Code runtime');
+  console.warn('⚠️  This module will not function correctly outside Claude Code environment');
+}
+
 /**
  * Raindrop MCP Client
  *

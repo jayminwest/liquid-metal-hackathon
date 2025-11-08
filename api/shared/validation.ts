@@ -75,7 +75,10 @@ export function validateAnnotationId(annotation_id: string): void {
 
 /**
  * Validates SQL query for basic injection patterns
- * Note: This is a basic check. Use parameterized queries for full protection.
+ *
+ * WARNING: This is basic pattern matching, NOT real SQL injection protection.
+ * For hackathon demo only. Use parameterized queries in production.
+ * This provides minimal defense-in-depth but should NOT be relied upon for security.
  */
 export function validateSQLQuery(query: string): void {
   if (!query || typeof query !== 'string') {
