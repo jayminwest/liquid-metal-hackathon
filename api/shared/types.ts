@@ -133,3 +133,9 @@ export interface UserSession {
   timeline: string;
   metadata?: Record<string, any>;
 }
+
+// Re-export types from new type modules
+export * from './types/env';
+export * from './types/context';
+export * from './types/api';
+export * from './types/mcp';

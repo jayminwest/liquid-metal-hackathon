@@ -16,6 +16,7 @@ import type { MCPClientConfig } from './types';
  * - Working Memory: Active session context
  * - Episodic Memory: Past session summaries
  * - SmartSQL: Structured data storage
+ * - Annotations: Structured knowledge storage
  */
 export class RaindropClient {
   private config: MCPClientConfig;
@@ -32,54 +33,96 @@ export class RaindropClient {
   /**
    * Create SmartBucket for knowledge storage
    */
-  async createKnowledgeBucket(bucketName?: string) {
-    const name = bucketName || this.defaultBucket;
-    // In Claude Code context: mcp__raindrop-mcp__create-smartbucket
-    console.log('[MCP] create-smartbucket:', name);
-    return { bucket_name: name, created: true };
+  async createSmartBucket(params: {
+    bucket_name: string;
+    description?: string;
+    embedding_model?: string;
+  }) {
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__create-smartbucket
+    // Expected return: { success: boolean, bucket_name: string }
+    console.log('[MCP] create-smartbucket:', params.bucket_name);
+    return { success: true, bucket_name: params.bucket_name };
   }
 
   /**
-   * Upload document to SmartBucket
+   * Upload document/object to bucket
    */
-  async uploadDocument(params: {
-    bucket_name?: string;
+  async putObject(params: {
+    bucket_name: string;
     key: string;
     content: string;
     content_type?: string;
   }) {
-    // In Claude Code context: mcp__raindrop-mcp__put-object
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__put-object
+    // Expected return: { success: boolean, key: string }
     console.log('[MCP] put-object:', params.key);
     return { success: true, key: params.key };
+  }
+
+  async getObject(params: {
+    bucket_name: string;
+    key: string;
+  }) {
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__get-object
+    // Expected return: { content: string, content_type: string }
+    console.log('[MCP] get-object:', params.key);
+    return { content: '', content_type: 'application/octet-stream' };
+  }
+
+  async deleteObject(params: {
+    bucket_name: string;
+    key: string;
+  }) {
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__delete-object
+    // Expected return: { success: boolean }
+    console.log('[MCP] delete-object:', params.key);
+    return { success: true };
+  }
+
+  async listObjects(params: {
+    bucket_name: string;
+    prefix?: string;
+    limit?: number;
+  }) {
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__list-objects
+    // Expected return: { objects: Array<{ key: string, size: number, last_modified: string }> }
+    console.log('[MCP] list-objects');
+    return { objects: [] };
   }
 
   /**
    * Search documents semantically in SmartBucket
    */
   async documentSearch(params: {
-    bucket_name?: string;
+    bucket_name: string;
     query: string;
     limit?: number;
     threshold?: number;
   }) {
-    // In Claude Code context: mcp__raindrop-mcp__document-search
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__document-search
+    // Expected return: { results: Array<{ document_id: string, score: number, content: string }> }
     console.log('[MCP] document-search:', params.query);
-    return {
-      results: [],
-      // Will be populated by actual MCP call
-    };
+    return { results: [] };
   }
 
   /**
    * Search for specific chunks within documents
    */
   async chunkSearch(params: {
-    bucket_name?: string;
+    bucket_name: string;
     query: string;
     document_id?: string;
     limit?: number;
   }) {
-    // In Claude Code context: mcp__raindrop-mcp__chunk-search
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__chunk-search
+    // Expected return: { chunks: Array<{ chunk_id: string, document_id: string, content: string, score: number }> }
     console.log('[MCP] chunk-search:', params.query);
     return { chunks: [] };
   }
@@ -88,13 +131,54 @@ export class RaindropClient {
    * Ask questions about a specific document
    */
   async documentQuery(params: {
-    bucket_name?: string;
+    bucket_name: string;
     document_id: string;
     query: string;
   }) {
-    // In Claude Code context: mcp__raindrop-mcp__document-query
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__document-query
+    // Expected return: { answer: string }
     console.log('[MCP] document-query:', params.query);
     return { answer: '' };
+  }
+
+  // ============================================================================
+  // ANNOTATIONS - Structured Knowledge Storage
+  // ============================================================================
+
+  async putAnnotation(params: {
+    annotation_id: string;
+    content: string;
+    metadata?: Record<string, any>;
+    tags?: string[];
+  }) {
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__put-annotation
+    // Expected return: { success: boolean, annotation_id: string }
+    console.log('[MCP] put-annotation:', params.annotation_id);
+    return { success: true, annotation_id: params.annotation_id };
+  }
+
+  async getAnnotation(params: {
+    annotation_id: string;
+  }) {
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__get-annotation
+    // Expected return: { content: string, metadata: Record<string, any>, tags: string[] }
+    console.log('[MCP] get-annotation:', params.annotation_id);
+    return { content: '', metadata: {}, tags: [] };
+  }
+
+  async listAnnotations(params: {
+    tags?: string[];
+    limit?: number;
+    offset?: number;
+  }) {
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__list-annotations
+    // Expected return: { annotations: Array<{ annotation_id: string, content: string, metadata: any, tags: string[] }> }
+    console.log('[MCP] list-annotations');
+    return { annotations: [] };
   }
 
   // ============================================================================
@@ -111,7 +195,9 @@ export class RaindropClient {
     timeline?: string;
     agent?: string;
   }) {
-    // In Claude Code context: mcp__raindrop-mcp__put-memory
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__put-memory
+    // Expected return: { success: boolean, memory_id: string }
     console.log('[MCP] put-memory:', params.key || 'unnamed');
     return { success: true, memory_id: `mem_${Date.now()}` };
   }
@@ -125,7 +211,9 @@ export class RaindropClient {
     timeline?: string;
     n_most_recent?: number;
   }) {
-    // In Claude Code context: mcp__raindrop-mcp__get-memory
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__get-memory
+    // Expected return: { memories: Array<{ memory_id: string, content: string, timestamp: string }> }
     console.log('[MCP] get-memory:', params.session_id);
     return { memories: [] };
   }
@@ -139,7 +227,9 @@ export class RaindropClient {
     timeline?: string;
     n_most_recent?: number;
   }) {
-    // In Claude Code context: mcp__raindrop-mcp__search-memory
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__search-memory
+    // Expected return: { results: Array<{ memory_id: string, content: string, relevance: number }> }
     console.log('[MCP] search-memory:', params.terms);
     return { results: [] };
   }
@@ -153,7 +243,9 @@ export class RaindropClient {
     n_most_recent?: number;
     system_prompt?: string;
   }) {
-    // In Claude Code context: mcp__raindrop-mcp__summarize-memory
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__summarize-memory
+    // Expected return: { summary: string }
     console.log('[MCP] summarize-memory:', params.session_id);
     return { summary: '' };
   }
@@ -170,7 +262,9 @@ export class RaindropClient {
     session_id: string;
     flush?: boolean; // If true, saves to episodic memory
   }) {
-    // In Claude Code context: mcp__raindrop-mcp__end-session
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__end-session
+    // Expected return: { success: boolean }
     console.log('[MCP] end-session:', params.session_id, 'flush:', params.flush);
     return { success: true };
   }
@@ -184,7 +278,8 @@ export class RaindropClient {
     n_most_recent?: number;
   }) {
     // Episodic memory is accessed via annotations with special tags
-    // In Claude Code context: mcp__raindrop-mcp__list-annotations
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__list-annotations
     console.log('[MCP] search episodic:', params.query);
     return { sessions: [] };
   }
@@ -204,7 +299,8 @@ export class RaindropClient {
     metadata?: Record<string, any>;
   }) {
     // Use annotations for semantic memory
-    // In Claude Code context: mcp__raindrop-mcp__put-annotation
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__put-annotation
     console.log('[MCP] put semantic memory:', params.topic);
     return { success: true, annotation_id: `sem_${Date.now()}` };
   }
@@ -217,7 +313,8 @@ export class RaindropClient {
     tags?: string[];
     limit?: number;
   }) {
-    // In Claude Code context: mcp__raindrop-mcp__list-annotations
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__list-annotations
     console.log('[MCP] search semantic:', params.query);
     return { results: [] };
   }
@@ -236,7 +333,8 @@ export class RaindropClient {
     metadata?: Record<string, any>;
   }) {
     // Use annotations with 'procedure' tag
-    // In Claude Code context: mcp__raindrop-mcp__put-annotation
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__put-annotation
     console.log('[MCP] put procedure:', params.name);
     return { success: true, procedure_id: `proc_${Date.now()}` };
   }
@@ -245,7 +343,8 @@ export class RaindropClient {
    * Get specific procedure/template
    */
   async getProcedure(name: string) {
-    // In Claude Code context: mcp__raindrop-mcp__get-annotation
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__get-annotation
     console.log('[MCP] get procedure:', name);
     return { template: '' };
   }
@@ -254,7 +353,8 @@ export class RaindropClient {
    * List all procedures
    */
   async listProcedures(tags?: string[]) {
-    // In Claude Code context: mcp__raindrop-mcp__list-annotations with tags filter
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__list-annotations with tags filter
     console.log('[MCP] list procedures');
     return { procedures: [] };
   }
@@ -268,7 +368,9 @@ export class RaindropClient {
     query: string;
     parameters?: string[];
   }) {
-    // In Claude Code context: mcp__raindrop-mcp__sql-execute-query
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__sql-execute-query
+    // Expected return: { rows: Array<Record<string, any>> }
     console.log('[MCP] sql-execute-query');
     return { rows: [] };
   }
@@ -277,7 +379,9 @@ export class RaindropClient {
     database_id: string;
     table_name?: string;
   }) {
-    // In Claude Code context: mcp__raindrop-mcp__sql-get-metadata
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__sql-get-metadata
+    // Expected return: { metadata: Record<string, any> }
     console.log('[MCP] sql-get-metadata');
     return { metadata: {} };
   }
@@ -287,7 +391,9 @@ export class RaindropClient {
   // ============================================================================
 
   async startSession() {
-    // In Claude Code context: mcp__raindrop-mcp__start-session
+    // TODO: Replace with actual MCP tool call
+    // Implementation should call: mcp__raindrop-mcp__start-session
+    // Expected return: { session_id: string }
     console.log('[MCP] start-session');
     return { session_id: `session_${Date.now()}` };
   }
