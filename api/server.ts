@@ -147,8 +147,94 @@ knowledge.post('/sync', async (c) => {
   }
 });
 
+// File upload endpoint
+knowledge.post('/upload', async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const file = body.file as File;
+
+    if (!file) {
+      return c.json({
+        status: 'error',
+        error: 'No file provided',
+      }, 400);
+    }
+
+    const sessionId = c.req.header('X-Session-ID') || 'default-session';
+    const content = await file.text();
+
+    // Create knowledge entry from file
+    const entry: KnowledgeEntry = {
+      topic: file.name,
+      content: content,
+      relations: [],
+      observations: [
+        {
+          category: 'document',
+          text: `Uploaded file: ${file.name}`,
+        },
+      ],
+      tags: ['uploaded', 'document'],
+      source: 'file-upload',
+      metadata: {
+        filename: file.name,
+        size: file.size,
+        type: file.type,
+        uploadedAt: new Date().toISOString(),
+      },
+    };
+
+    const result = await captureKnowledge(entry, sessionId);
+
+    return c.json({
+      status: result.status,
+      filename: file.name,
+      entity_path: result.entity_path,
+      error: result.error,
+    });
+  } catch (error) {
+    return c.json({
+      status: 'error',
+      filename: '',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }, 500);
+  }
+});
+
 // Mount knowledge routes
 app.route('/api/knowledge', knowledge);
+
+// Chat endpoint
+app.post('/api/chat', async (c) => {
+  try {
+    const { message } = await c.req.json();
+    const sessionId = c.req.header('X-Session-ID') || 'default-session';
+
+    if (!message) {
+      return c.json({
+        response: 'Please provide a message',
+        sessionId,
+      }, 400);
+    }
+
+    // Use knowledge query to generate response
+    const result = await queryKnowledge({
+      question: message,
+      session_id: sessionId,
+      mode: 'hybrid',
+    });
+
+    return c.json({
+      response: result.answer,
+      sessionId,
+    });
+  } catch (error) {
+    return c.json({
+      response: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      sessionId: c.req.header('X-Session-ID') || 'default-session',
+    }, 500);
+  }
+});
 
 // Tooling endpoints (placeholder for partner's work)
 const tooling = new Hono();
@@ -160,6 +246,13 @@ tooling.get('/', (c) => {
 });
 
 app.route('/api/tooling', tooling);
+
+// Static file serving (production)
+// Serve built frontend from interaction/dist
+import { serveStatic } from 'hono/bun';
+
+app.use('/*', serveStatic({ root: './interaction/dist' }));
+app.get('/', serveStatic({ path: './interaction/dist/index.html' }));
 
 // 404 handler
 app.notFound((c) => {
